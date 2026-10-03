@@ -1,0 +1,13 @@
+[colors]
+foreground = "#1c1d22"
+background = "#fbfbfd"
+cursor_bg = "#5559de"
+cursor_border = "#5559de"
+cursor_fg = "#fbfbfd"
+selection_bg = "#dde0f5"
+selection_fg = "#1c1d22"
+ansi = ["#2a2b31", "#cf3747", "#1f8a5b", "#a36a00", "#3f57d8", "#8a4fd8", "#137f86", "#d6d8df"]
+brights = ["#6e717c", "#e0566a", "#2aa772", "#c48410", "#5f75e8", "#a36de6", "#1d9aa2", "#ffffff"]
+
+[metadata]
+name = "Claudinator Hairline Light"

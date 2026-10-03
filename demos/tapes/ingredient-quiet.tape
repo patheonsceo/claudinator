@@ -1,6 +1,7 @@
 Output demos/out/ingredient-quiet.gif
 Require claude
 Source demos/tapes/_settings.tape
+Source demos/tapes/_theme.tape
 
 Hide
 Type "cd demos/fixture && CLAUDE_CODE_NO_FLICKER=1 claude --plugin-dir ../.. --model haiku --dangerously-skip-permissions --settings ../settings.json" Enter

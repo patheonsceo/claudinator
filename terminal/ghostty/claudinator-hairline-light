@@ -1,0 +1,22 @@
+# Claudinator Hairline Light
+palette = 0=#2a2b31
+palette = 1=#cf3747
+palette = 2=#1f8a5b
+palette = 3=#a36a00
+palette = 4=#3f57d8
+palette = 5=#8a4fd8
+palette = 6=#137f86
+palette = 7=#d6d8df
+palette = 8=#6e717c
+palette = 9=#e0566a
+palette = 10=#2aa772
+palette = 11=#c48410
+palette = 12=#5f75e8
+palette = 13=#a36de6
+palette = 14=#1d9aa2
+palette = 15=#ffffff
+background = #fbfbfd
+foreground = #1c1d22
+cursor-color = #5559de
+selection-background = #dde0f5
+selection-foreground = #1c1d22

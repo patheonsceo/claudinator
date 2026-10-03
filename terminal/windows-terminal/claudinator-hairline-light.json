@@ -1,0 +1,23 @@
+{
+  "name": "Claudinator Hairline Light",
+  "background": "#fbfbfd",
+  "foreground": "#1c1d22",
+  "cursorColor": "#5559de",
+  "selectionBackground": "#dde0f5",
+  "black": "#2a2b31",
+  "red": "#cf3747",
+  "green": "#1f8a5b",
+  "yellow": "#a36a00",
+  "blue": "#3f57d8",
+  "purple": "#8a4fd8",
+  "cyan": "#137f86",
+  "white": "#d6d8df",
+  "brightBlack": "#6e717c",
+  "brightRed": "#e0566a",
+  "brightGreen": "#2aa772",
+  "brightYellow": "#c48410",
+  "brightBlue": "#5f75e8",
+  "brightPurple": "#a36de6",
+  "brightCyan": "#1d9aa2",
+  "brightWhite": "#ffffff"
+}

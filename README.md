@@ -34,6 +34,10 @@ Requires Claude Code v2.1.287 or later. Fullscreen mode (`CLAUDE_CODE_NO_FLICKER
 
 See [docs/ingredients.md](docs/ingredients.md) for a GIF of each. Six more looks are on the way: Broadsheet, Mission Control, Prism, Sumi, Blueprint and Thermal. See the [roadmap](docs/design/2026-10-03-claudinator-design.md#12-milestones).
 
+## Make it complete: themes
+
+Hairline also comes as a **Claude Code theme** for Claude Code's own interface (the input box, your messages, accents) and as a **color scheme for your terminal** (Ghostty, kitty, WezTerm, Alacritty, Windows Terminal and iTerm2), dark and light. Run `/theme` and pick *Claudinator Hairline Dark*, then add the matching file for your terminal. See [docs/themes.md](docs/themes.md).
+
 ## Commands
 
 | Command | What it does |

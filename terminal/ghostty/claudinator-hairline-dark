@@ -1,0 +1,22 @@
+# Claudinator Hairline Dark
+palette = 0=#1a1b21
+palette = 1=#ff7a85
+palette = 2=#7fd1a8
+palette = 3=#f2c66d
+palette = 4=#8fa2ff
+palette = 5=#c79bff
+palette = 6=#6fd0d6
+palette = 7=#c9cbd3
+palette = 8=#4a4d58
+palette = 9=#ff9aa3
+palette = 10=#a0e3c1
+palette = 11=#f7d993
+palette = 12=#b0beff
+palette = 13=#dbbdff
+palette = 14=#96e0e4
+palette = 15=#f4f5f8
+background = #111216
+foreground = #e8e9ee
+cursor-color = #a0a3ff
+selection-background = #2a2c3a
+selection-foreground = #e8e9ee

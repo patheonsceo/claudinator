@@ -1,0 +1,32 @@
+# Claudinator Hairline Light
+[colors.primary]
+background = "#fbfbfd"
+foreground = "#1c1d22"
+
+[colors.cursor]
+cursor = "#5559de"
+text = "#fbfbfd"
+
+[colors.selection]
+background = "#dde0f5"
+text = "#1c1d22"
+
+[colors.normal]
+black = "#2a2b31"
+red = "#cf3747"
+green = "#1f8a5b"
+yellow = "#a36a00"
+blue = "#3f57d8"
+magenta = "#8a4fd8"
+cyan = "#137f86"
+white = "#d6d8df"
+
+[colors.bright]
+black = "#6e717c"
+red = "#e0566a"
+green = "#2aa772"
+yellow = "#c48410"
+blue = "#5f75e8"
+magenta = "#a36de6"
+cyan = "#1d9aa2"
+white = "#ffffff"
