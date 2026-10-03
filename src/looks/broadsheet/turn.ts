@@ -38,7 +38,7 @@ export function headline(h: HeadlineData, ctx: Ctx): RenderElement {
 
 /** A line set in the middle of the page. */
 function centered(ctx: Ctx, child: RenderElement): RenderElement {
-  return ctx.els.Box({ flexDirection: 'row', justifyContent: 'center', children: ctx.els.Box({ flexShrink: 1, minWidth: 0, children: child }) })
+  return ctx.els.Box({ flexDirection: 'row', width: '100%', justifyContent: 'center', children: ctx.els.Box({ flexShrink: 1, minWidth: 0, children: child }) })
 }
 
 /** `❦ set in 2 min 14 s · 2 files · +103 −10 · 41% of context ❦`. */
@@ -66,5 +66,6 @@ export function receipt(data: ReceiptData, ctx: Ctx): RenderElement {
   if (data.timeStrip && ctx.columns >= NARROW_COLUMNS) {
     parts.push(centered(ctx, timeStripRow(ctx, data.timeStrip, { glyph: '━', indent: 0, thinking: C.accent, tools: C.dim, waiting: C.err })))
   }
-  return Box({ flexDirection: 'column', children: parts })
+  // Full width, so the colophon centers on the page and not on itself.
+  return Box({ flexDirection: 'column', width: '100%', children: parts })
 }
