@@ -31,5 +31,5 @@ jobs:
         run: claude plugin test .
       - name: Test the theme generator
         run: node --test tools/themes.test.mjs
-      - name: Check the generated themes are up to date
-        run: node tools/themes.mjs --check
+      - name: Check the generated themes and demo tapes are up to date
+        run: node tools/themes.mjs --check && node tools/tapes.mjs --check

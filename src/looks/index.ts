@@ -1,18 +1,20 @@
 import type { LookId } from '../engine/settings'
 import { BLUEPRINT } from './blueprint'
+import { BROADSHEET } from './broadsheet'
 import { HAIRLINE } from './hairline'
 import { MISSION } from './mission'
+import { PRISM } from './prism'
+import { SUMI } from './sumi'
 import { THERMAL } from './thermal'
 import type { Look } from './look'
 
 /** Every look by id; null means Claudinator draws nothing and Claude Code draws its own. */
 export const LOOKS: Record<LookId, Look | null> = {
   hairline: HAIRLINE,
-  // Wired in as each look lands; until then a look id draws nothing, like Off.
-  broadsheet: null,
+  broadsheet: BROADSHEET,
   mission: MISSION,
-  prism: null,
-  sumi: null,
+  prism: PRISM,
+  sumi: SUMI,
   blueprint: BLUEPRINT,
   thermal: THERMAL,
   off: null,

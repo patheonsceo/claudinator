@@ -206,8 +206,14 @@ function main() {
     .filter(f => f.endsWith('.json'))
     .map(f => JSON.parse(readFileSync(join(root, 'palettes', f), 'utf8')))
   const files = palettes.flatMap(outputs)
-  const hairline = palettes.find(p => p.id === 'hairline')
-  if (hairline) files.push({ path: 'demos/tapes/_theme.tape', content: vhsTheme(hairline, 'dark') + '\n' })
+  // Each look's demo recordings use its own terminal colors and its own Claude Code theme.
+  for (const palette of palettes) {
+    files.push({ path: `demos/themes/${palette.id}.tape`, content: vhsTheme(palette, 'dark') + '\n' })
+    files.push({
+      path: `demos/themes/${palette.id}.settings.json`,
+      content: JSON.stringify({ statusLine: { type: 'command', command: 'true' }, theme: `custom:claudinator:${palette.id}-dark` }, null, 2) + '\n',
+    })
+  }
   const stale = []
   for (const file of files) {
     const path = join(root, file.path)
