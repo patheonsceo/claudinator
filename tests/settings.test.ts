@@ -27,8 +27,8 @@ describe('settings', () => {
   })
 
   test('a project file cannot hide rows: it may not turn on Quiet', async () => {
-    expect(projectLayerOf({ look: 'off', ingredients: { quiet: true, fileColors: true } })).toEqual({ look: 'off', ingredients: { fileColors: true } })
-    expect(projectLayerOf({ ingredients: { quiet: true, footnotes: true } }), 'footnotes hide rows too').toEqual({})
+    expect(projectLayerOf({ look: 'off', ingredients: { quiet: true, fileColors: true } })).toEqual({ look: 'off', ingredients: { fileColors: true }, fromProject: true })
+    expect(projectLayerOf({ ingredients: { quiet: true, footnotes: true } }), 'footnotes hide rows too').toEqual({ fromProject: true })
   })
 
   test('a change touches only the field the user changed', async () => {

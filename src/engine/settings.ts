@@ -10,6 +10,8 @@ export const INGREDIENT_IDS: readonly IngredientId[] = ['recency', 'miniDiffs', 
 
 /** Part of a Settings, as one source sets it. */
 export type SettingsLayer = {
+  /** Set on a project file's layer: a look it picks never brings ingredients that hide rows. */
+  fromProject?: true
   look?: LookId
   ingredients?: Partial<Record<IngredientId, boolean>>
   attention?: Partial<Settings['attention']>
@@ -124,7 +126,7 @@ export function projectLayerOf(raw: unknown): SettingsLayer {
   const layer = layerOf(raw)
   const ingredients = { ...(layer.ingredients ?? {}) }
   for (const id of HIDING_INGREDIENTS) delete ingredients[id]
-  return compact(layer.look, ingredients)
+  return { ...compact(layer.look, ingredients), fromProject: true }
 }
 
 /** A layer from the plugin's userConfig options: `look`, `attentionSound`, `attentionNotify`. */
@@ -138,8 +140,17 @@ export function optionsLayer(options: Readonly<Record<string, unknown>>): Settin
  */
 export function resolveSettings(layers: SettingsLayer[]): Settings {
   let look: LookId = 'hairline'
-  for (const layer of layers) if (layer.look) look = layer.look
-  const ingredients = { ...BASE_INGREDIENTS, ...LOOK_DEFAULTS[look] }
+  let isProjectLook = false
+  for (const layer of layers) {
+    if (layer.look) {
+      look = layer.look
+      isProjectLook = layer.fromProject === true
+    }
+  }
+  const lookDefaults = { ...LOOK_DEFAULTS[look] }
+  // A project can pick a look, but not use the look to hide rows from you.
+  if (isProjectLook) for (const id of HIDING_INGREDIENTS) delete lookDefaults[id]
+  const ingredients = { ...BASE_INGREDIENTS, ...lookDefaults }
   const attention = { sound: false, notify: false }
   for (const layer of layers) {
     Object.assign(ingredients, layer.ingredients ?? {})
