@@ -1,6 +1,6 @@
 import type { RenderElement, TextProps } from 'claude-code'
 
-import { SLOW_MS, formatDuration, splitPath } from '../../engine/format'
+import { SLOW_MS, formatDuration, printable, splitPath } from '../../engine/format'
 import { fileColor, tone } from '../../engine/palette'
 import type { Ctx } from '../look'
 
@@ -163,9 +163,15 @@ export function timing(ctx: Ctx, ms: number): RenderElement {
   return ctx.els.Box({ flexShrink: 0, children: txt(ctx, ms >= SLOW_MS ? C.warn : C.dim, formatDuration(ms).padStart(5)) })
 }
 
+/** A path's folder and file name, safe to draw: escapes and control bytes stripped. */
+export function safePath(ctx: Ctx, path: string): { dir: string; base: string } {
+  const { dir, base } = splitPath(path, ctx.cwd)
+  return { dir: printable(dir, 400), base: printable(base, 200) }
+}
+
 /** A path as folder (dim) and file name in its hue, truncated from the start when tight. */
 export function pathLabel(ctx: Ctx, path: string): RenderElement {
-  const { dir, base } = splitPath(path, ctx.cwd)
+  const { dir, base } = safePath(ctx, path)
   const color = ctx.settings.ingredients.fileColors ? hueOf(ctx, path) : C.text
   return ctx.els.Text({ wrap: 'truncate-start', children: [txt(ctx, C.dim, dir), txt(ctx, color, base)] })
 }

@@ -1,11 +1,11 @@
 import type { RenderElement } from 'claude-code'
 
-import { formatDuration, printable, splitPath } from '../../engine/format'
+import { formatDuration, printable } from '../../engine/format'
 import { tone } from '../../engine/palette'
 import type { FileChange, TurnStats } from '../../engine/session-model'
 import { inatorQuip, notesBlock, timeStripRow } from '../common'
 import type { Ctx, HeadlineData, ReceiptData } from '../look'
-import { C, NARROW_COLUMNS, clipped, delta, gradientRun, gradientText, grow, hex, hueOf, mix, txt } from './style'
+import { C, NARROW_COLUMNS, clipped, delta, gradientRun, gradientText, grow, hex, hueOf, mix, safePath, txt } from './style'
 
 export function userMessage(text: string, ctx: Ctx): RenderElement {
   const { Box, Text } = ctx.els
@@ -83,7 +83,7 @@ function legend(ctx: Ctx, byFile: readonly FileChange[], isCounted: boolean): Re
   const parts: Array<RenderElement | string> = []
   byFile.forEach((f, i) => {
     if (i > 0) parts.push('  ')
-    parts.push(txt(ctx, hueOf(ctx, f.file), '●'), ' ', txt(ctx, C.text, splitPath(f.file, ctx.cwd).base))
+    parts.push(txt(ctx, hueOf(ctx, f.file), '●'), ' ', txt(ctx, C.text, safePath(ctx, f.file).base))
     if (isCounted) parts.push(' ', txt(ctx, C.dim, String(f.add + f.del)))
   })
   return Box({ paddingLeft: 2, children: Text({ wrap: 'truncate-end', children: parts }) })

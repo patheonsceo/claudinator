@@ -135,6 +135,27 @@ describe('prism tool rows', () => {
     for (const tree of trees) expect(JSON.stringify(tree)).not.toContain('\\u001b')
   })
 
+  test('escape and bell bytes from paths, commands and output never reach any tree', async () => {
+    const bad = '\x1b[31m' + '\x07'
+    const c = ctx()
+    const trees = [
+      PRISM.receipt({ ...RECEIPT, stats: { turn: 1, files: [`/work/${bad}a.ts`], add: 1, del: 0, byFile: [{ file: `/work/${bad}a.ts`, add: 1, del: 0 }] } }, c),
+      PRISM.receipt({ ...RECEIPT, stats: { turn: 1, files: [`/work/${bad}b.ts`], add: 1, del: 0 } }, c),
+      PRISM.toolRow(row({ input: { file_path: `/work/${bad}c.ts` } }), c),
+      PRISM.toolGroup([row({ input: { file_path: `/work/${bad}d.ts` } }), row({ id: 'e', tool: 'Bash', input: { command: `${bad}ls` } })], c),
+      PRISM.toolRow(row({ tool: 'Bash', input: { command: `${bad}ls` } }), c),
+      PRISM.toolRow(row({ tool: `mcp__x__${bad}go`, input: { q: `${bad}x` } }), c),
+      PRISM.toolResult({ tool: 'Bash', output: { stdout: `${bad}done`, stderr: '' }, isErrored: false }, c),
+      PRISM.toolResult({ tool: 'Bash', output: `${bad}boom`, isErrored: true }, c),
+      PRISM.live({ mode: 'running', detail: `Read ${bad}a.ts`, elapsedMs: 0 }, 0, ctx({ els: DESKTOP_ELS, surface: 'desktop' })),
+    ]
+    for (const tree of trees) {
+      const json = JSON.stringify(tree)
+      expect(json).not.toContain('\\u001b')
+      expect(json).not.toContain('\\u0007')
+    }
+  })
+
   test('a group is a neutral counted chip with a dot per file in its color', async () => {
     const rows = [0, 1, 2].map(i => row({ id: `r${i}`, input: { file_path: `/work/src/f${i}.ts` }, durationMs: 100 }))
     const tree = PRISM.toolGroup(rows, ctx())

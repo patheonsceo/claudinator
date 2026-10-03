@@ -1,15 +1,15 @@
 import type { RenderElement } from 'claude-code'
 
-import { plural, printable, splitPath } from '../../engine/format'
+import { plural, printable } from '../../engine/format'
 import { tone } from '../../engine/palette'
 import { GLYPHS, bashSummary, changeOf, errorSummary, factsOf, isChangeTool, pickDiffLines } from '../../engine/tool-facts'
 import type { DiffLine, ToolFacts } from '../../engine/tool-facts'
 import type { Ctx, ResultRow, ToolRow } from '../look'
-import { C, CHIP_COLUMNS, chip, delta, gradientChip, grow, hex, hueOf, pathLabel, timing, txt } from './style'
+import { C, CHIP_COLUMNS, chip, delta, gradientChip, grow, hex, hueOf, pathLabel, safePath, timing, txt } from './style'
 
 /** `EDIT`, `SEARCH`; long MCP names end in an ellipsis instead of being cut. */
 export function chipWord(verb: string): string {
-  const word = verb.toUpperCase()
+  const word = printable(verb, 40).toUpperCase()
   return word.length > 6 ? word.slice(0, 5) + '…' : word
 }
 
@@ -45,7 +45,7 @@ export function toolRow(row: ToolRow, ctx: Ctx): RenderElement {
   const facts = factsOf(row.tool, row.input)
   const change = isChangeTool(row.tool) ? changeOf(row.tool, row.input) : null
   const failed = row.isErrored || row.isInterrupted
-  const target = facts.isPath && facts.target !== '' ? pathLabel(ctx, facts.target) : txt(ctx, facts.isPath ? C.dim : C.text, facts.target, { wrap: 'truncate-end' })
+  const target = facts.isPath && facts.target !== '' ? pathLabel(ctx, facts.target) : txt(ctx, facts.isPath ? C.dim : C.text, printable(facts.target, 400), { wrap: 'truncate-end' })
   const parts: RenderElement[] = [Box({ width: CHIP_COLUMNS, flexShrink: 0, children: rowChip(ctx, facts, failed) }), grow(ctx, target)]
   if (failed) parts.push(txt(ctx, C.err, row.isInterrupted ? 'interrupted' : 'failed'))
   else if (change) parts.push(...delta(ctx, change.add, change.del))
@@ -83,11 +83,11 @@ function groupBody(ctx: Ctx, rows: ToolRow[]): Array<RenderElement | string> {
   if (paths.length > 0) body.push(ctx.els.Text({ children: paths.map(p => ctx.els.Text({ color: tone(hueOf(ctx, p), ctx.fade), children: '●' })) }), ' ')
   paths.forEach((p, i) => {
     if (i > 0) sep()
-    body.push(txt(ctx, C.dim, splitPath(p, ctx.cwd).base))
+    body.push(txt(ctx, C.dim, safePath(ctx, p).base))
   })
   for (const f of others) {
     sep()
-    body.push(txt(ctx, C.faint, `${GLYPHS[f.glyph]} `), txt(ctx, C.dim, f.target === '' ? f.verb : f.target))
+    body.push(txt(ctx, C.faint, `${GLYPHS[f.glyph]} `), txt(ctx, C.dim, printable(f.target === '' ? f.verb : f.target, 200)))
   }
   return body
 }
