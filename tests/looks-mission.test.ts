@@ -4,8 +4,8 @@ import { DEFAULT_SETTINGS } from '../src/engine/settings'
 import type { Settings } from '../src/engine/settings'
 import type { Ctx, LiveState, ReceiptData, ToolRow } from '../src/looks/look'
 import { MISSION } from '../src/looks/mission'
-import { scopeCells, tClock } from '../src/looks/mission/live'
-import { meterCells } from '../src/looks/mission/style'
+import { BAR_COLUMNS, TRACE_COLUMNS, barFill, sparkLevels, tClock, traceCells } from '../src/looks/mission/live'
+import { GANTT_CELLS, ganttSpan } from '../src/looks/mission/style'
 import { DESKTOP_ELS, ctxOf, textOf } from './fixtures'
 
 const EDIT = { file_path: '/work/src/cart.js', old_string: 'a\nb\nc', new_string: 'a\nB\nC\nD\nc' }
@@ -75,31 +75,66 @@ describe('mission control look', () => {
     expect(tag('mcp__srv__thing', { q: 'hello' })).toContain('TOOL')
   })
 
-  test('an edit marks the rail, counts its lines and draws a meter on wide terminals', async () => {
+  test('an edit marks the rail and counts its lines in the reading column', async () => {
     const wide = textOf(MISSION.toolRow(row('Edit', EDIT, { durationMs: 300 }), ctxOf({ columns: 120 })))
     expect(wide.startsWith('├')).toBe(true)
     expect(wide).toContain('EDIT')
     expect(wide).toContain('+3 −1')
-    expect(wide).toMatch(/[▮]+[▯]+/)
+    expect(wide, 'no edit meter: the lookbook draws a timeline instead').not.toMatch(/[▯▰]/)
     const narrow = textOf(MISSION.toolRow(row('Edit', EDIT, { durationMs: 300 }), ctxOf({ columns: 60 })))
     expect(narrow).toContain('+3 −1')
-    expect(narrow, 'no meter below 100 columns').not.toMatch(/[▮▯]/)
+  })
+
+  test('every row carries a dotted timeline with a bar where the call ran, on wide terminals', async () => {
+    const at = (offsetMs: number, columns = 120): string =>
+      textOf(MISSION.toolRow(row('Read', { file_path: '/work/a.ts' }, { durationMs: 200, turnOffsetMs: offsetMs }), ctxOf({ columns })))
+    const track = (text: string): string => text.match(/[·▮](?: [·▮]){15}/)?.[0] ?? ''
+    expect(track(at(1_000)), 'sixteen cells, spaced like the lookbook').not.toBe('')
+    expect(track(at(1_000)).indexOf('▮')).toBeLessThan(track(at(90_000)).indexOf('▮'))
+    expect(at(1_000, 99), 'no timeline below 100 columns').not.toContain('▮')
+    expect(textOf(MISSION.toolRow(row('Read', { file_path: '/work/a.ts' }, { durationMs: 200 }), ctxOf())), 'no bar when the offset is unknown').not.toContain('▮')
+    const colorOf = (tree: unknown): string | undefined => JSON.stringify(tree).match(/"color":"([^"]+)"\},"children":\["[^"]*▮/)?.[1]
+    expect(colorOf(MISSION.toolRow(row('Read', { file_path: '/work/a.ts' }, { durationMs: 200, turnOffsetMs: 5_000 }), ctxOf()))).toBe('suggestion')
+    expect(colorOf(MISSION.toolRow(row('Edit', EDIT, { durationMs: 200, turnOffsetMs: 5_000 }), ctxOf()))).toBe('warning')
+    expect(colorOf(MISSION.toolRow(row('Bash', { command: 'x' }, { isErrored: true, durationMs: 200, turnOffsetMs: 5_000 }), ctxOf()))).toBe('error')
+  })
+
+  test('the timeline span starts where the call did and is at least one cell wide', async () => {
+    expect(ganttSpan(0, 100)).toEqual({ start: 0, width: 1 })
+    let last = -1
+    for (const s of [500, 2_000, 10_000, 60_000, 300_000]) {
+      const span = ganttSpan(s, s + 200)
+      expect(span.start).toBeGreaterThanOrEqual(last)
+      expect(span.width).toBe(1)
+      last = span.start
+    }
+    expect(last).toBeGreaterThan(8)
+    expect(ganttSpan(5_000, 120_000).width).toBeGreaterThan(3)
+    const huge = ganttSpan(10 * 3_600_000, 20 * 3_600_000)
+    expect(huge.start + huge.width).toBeLessThanOrEqual(GANTT_CELLS)
+    expect(huge.width).toBeGreaterThanOrEqual(1)
+    expect(ganttSpan(Number.NaN, Number.NaN)).toEqual({ start: 0, width: 1 })
   })
 
   test('mini diffs show up to three changed lines, and only when on', async () => {
     const on = textOf(MISSION.toolRow(row('Edit', EDIT), ctxOf({ settings: withIngredients({ miniDiffs: true }) })))
-    expect(on).toContain('− b')
+    expect(on).toContain('- b')
     expect(on).toContain('+ B')
     expect(on).toContain('+ C')
     expect(on).not.toContain('+ D')
     const off = textOf(MISSION.toolRow(row('Edit', EDIT), ctxOf({ settings: withIngredients({ miniDiffs: false }) })))
     expect(off).not.toContain('+ B')
+    const json = JSON.stringify(MISSION.toolRow(row('Edit', EDIT), ctxOf({ settings: withIngredients({ miniDiffs: true }) })))
+    expect(json, 'changed lines are tinted like the lookbook').toContain('"backgroundColor":"diffAdded"')
+    expect(json).toContain('"backgroundColor":"diffRemoved"')
   })
 
   test('a failure breaks the rail and reads FAIL; an interruption reads ABORT', async () => {
     const failed = textOf(MISSION.toolRow(row('Bash', { command: 'npm test' }, { isErrored: true, durationMs: 900 }), ctxOf()))
     expect(failed.startsWith('┿')).toBe(true)
     expect(failed).toContain('FAIL')
+    expect(JSON.stringify(MISSION.toolRow(row('Bash', { command: 'npm test' }, { isErrored: true }), ctxOf())), 'the tag turns red').toContain('{"color":"error"},"children":["EXEC "]')
+    expect(JSON.stringify(MISSION.toolRow(row('Bash', { command: 'npm test' }), ctxOf()))).toContain('{"color":"suggestion"},"children":["EXEC "]')
     expect(textOf(MISSION.toolRow(row('Bash', { command: 'npm test' }, { isInterrupted: true }), ctxOf()))).toContain('ABORT')
     expect(textOf(MISSION.toolRow(row('Bash', { command: 'npm test' }, { durationMs: 900 }), ctxOf()))).toContain('PASS')
   })
@@ -165,6 +200,15 @@ describe('mission control look', () => {
     expect(failed).toContain('FAIL')
   })
 
+  test('a group of one kind reads like a row: tag, folder, count and files', async () => {
+    const rows = ['a', 'b', 'c', 'd', 'e'].map(n => row('Read', { file_path: `/work/src/auth/${n}.ts` }, { durationMs: 200, turnOffsetMs: 3_000 }))
+    const text = textOf(MISSION.toolGroup(rows, ctxOf()))
+    expect(text).toMatch(/^│ T\+00:03 READ src\/auth\/ ×5 ·+ 5 FILES /)
+    expect(text).toContain('▮')
+    expect(text).toContain('1.0s')
+    expect(text).toContain('a.ts · b.ts')
+  })
+
   test('quiet leaves a suppression trace', async () => {
     expect(textOf(MISSION.quietLine(3, ctxOf()))).toBe('┆ ░░ 3 EVENTS SUPPRESSED')
     expect(textOf(MISSION.quietLine(1, ctxOf()))).toBe('┆ ░░ 1 EVENT SUPPRESSED')
@@ -174,6 +218,7 @@ describe('mission control look', () => {
     const ctx = ctxOf()
     expect(textOf(MISSION.toolResult({ tool: 'Bash', output: { stdout: 'a\n3 passed\n' }, isErrored: false }, ctx))).toContain('3 passed')
     expect(textOf(MISSION.toolResult({ tool: 'Read', output: 'x', isErrored: true }, ctx))).toContain('x')
+    expect(textOf(MISSION.toolResult({ tool: 'Bash', output: 'boom', isErrored: true }, ctx)), 'the elbow sits under the tag').toBe('│' + ' '.repeat(9) + '└ boom')
     expect(JSON.stringify(MISSION.toolResult({ tool: 'Read', output: 'body', isErrored: false }, ctx))).toBe('{"type":"Box","props":{},"children":[]}')
     expect(MISSION.toolResult({ tool: 'mcp__x__y', output: 'body', isErrored: false }, ctx)).toBeNull()
     expect(MISSION.toolResult({ tool: 'Edit', output: '', isErrored: false }, ctxOf({ settings: withIngredients({ miniDiffs: false }) }))).toBeNull()
@@ -183,24 +228,35 @@ describe('mission control look', () => {
   test('the prompt is tagged INPUT and keeps its line breaks', async () => {
     const text = textOf(MISSION.userMessage('first line\nsecond', ctxOf()))
     expect(text).toBe('▶INPUTfirst line\nsecond')
+    expect(JSON.stringify(MISSION.userMessage('hello', ctxOf())), 'the prompt reads as prose, not bold').toContain('{"color":"text","wrap":"wrap"},"children":["hello"]')
     expect(textOf(MISSION.userMessage('x'.repeat(20_000), ctxOf())).length).toBeLessThan(5_000)
   })
 
   test('the headline is the turn and its title in capitals, over a clipped rule', async () => {
     const tree = MISSION.headline({ turn: 7, title: 'The refresh race, fixed' }, ctxOf())
     expect(textOf(tree)).toMatch(/^◇T07THE REFRESH RACE, FIXED─+$/)
+    expect(JSON.stringify(tree), 'the turn number is amber and bold').toContain('{"color":"warning","bold":true},"children":["T07"]')
     expect(JSON.stringify(tree)).toContain('"overflow":"hidden"')
   })
 
   test('the receipt is one bracketed reading with notes above and the time strip below', async () => {
     const text = textOf(MISSION.receipt(FULL_RECEIPT, ctxOf()))
-    expect(text).toMatch(/╞═ T07 ═ 2:14 ═ FILES 2 ═ Δ \+103 −10 ═ CTX ▰▰▰▰▱▱▱▱▱▱ 41% ═+╡/)
+    expect(text).toContain('╞═ T07 ═ 2:14 ═ FILES 2 ═ Δ +103 −10 ═ CTX ▰▰▰▰▱▱▱▱▱▱ 41% ═╡')
     expect(text.indexOf('¹')).toBeLessThan(text.indexOf('╞'))
     expect(text).toContain('READ')
     expect(text).toContain('src/a.ts')
     expect(text.indexOf('thinking 0:06')).toBeGreaterThan(text.indexOf('╡'))
     expect(text).toContain('waiting on you 0:01')
-    expect(textOf(MISSION.receipt({ durationMs: 9_000, stats: null, notes: [], timeStrip: null }, ctxOf()))).toMatch(/^╞═ 9\.0s ═+╡$/)
+    expect(textOf(MISSION.receipt({ durationMs: 9_000, stats: null, notes: [], timeStrip: null }, ctxOf()))).toBe('╞═ 9.0s ═╡')
+  })
+
+  test('the receipt brackets in amber and labels its readings in gray', async () => {
+    const json = JSON.stringify(MISSION.receipt({ ...FULL_RECEIPT, notes: [], timeStrip: null }, ctxOf()))
+    expect(json).toContain('{"color":"warning"},"children":[" ═ "]')
+    expect(json).toContain('{"color":"inactive"},"children":["FILES"]')
+    expect(json).toContain('{"color":"inactive"},"children":["Δ"]')
+    expect(json).toContain('{"color":"inactive"},"children":["CTX"]')
+    expect(json, 'the bracket closes right after the last reading').not.toContain('═══')
   })
 
   test('the receipt drops its meter below 100 columns and never shrinks its stats', async () => {
@@ -213,27 +269,52 @@ describe('mission control look', () => {
   test('-inator mode declares victory and schemes in the live line', async () => {
     const inator = ctxOf({ settings: withIngredients({ inator: true }) })
     const text = textOf(MISSION.receipt({ ...FULL_RECEIPT, notes: [], timeStrip: null }, inator))
-    expect(text).toContain('STATUS: VICTORY')
+    expect(text).toContain('═ VICTORY · ')
+    expect(text.endsWith(' ═╡')).toBe(true)
     expect(text.toLowerCase()).toContain('inator')
     expect(textOf(MISSION.receipt({ ...FULL_RECEIPT, notes: [], timeStrip: null }, ctxOf()))).not.toContain('VICTORY')
-    expect(textOf(MISSION.live({ mode: 'thinking', detail: '', elapsedMs: 0 }, 0, { ...inator, surface: 'desktop', els: DESKTOP_ELS }))).toContain('SCHEMING')
+    expect(textOf(MISSION.live({ mode: 'thinking', detail: '', elapsedMs: 0 }, 0, { ...inator, surface: 'desktop', els: DESKTOP_ELS }))).toMatch(/^◉SCHEME/)
   })
 
-  test('the terminal live line is a lamp, a word, an instrument and a mission clock', async () => {
+  test('thinking: a lamp, THINK, a scrolling teal sparkline with its peak in amber, and the clock at the right', async () => {
     const ctx = ctxOf()
-    const think = MISSION.live({ mode: 'thinking', detail: '', elapsedMs: 42_000 }, 3, ctx)
-    expect(textOf(think)).toContain('THINK')
+    const think = MISSION.live({ mode: 'thinking', detail: '', elapsedMs: 43_000 }, 3, ctx)
+    expect(textOf(think)).toMatch(/^◉THINK/)
     const json = JSON.stringify(think)
-    expect(json).toContain('"key":"cz-mission-lamp"')
-    expect(json).toContain('"key":"cz-mission-scope"')
-    expect(json).toContain('"key":"cz-mission-clock"')
-    expect(textOf(MISSION.live({ mode: 'writing', detail: '', elapsedMs: 0 }, 0, ctx))).toContain('XMIT')
-    const run = textOf(MISSION.live({ mode: 'running', detail: 'Run npm test', elapsedMs: 0 }, 0, ctx))
-    expect(run).toContain('EXEC')
-    expect(run).toContain('Run npm test')
-    expect(scopeCells('thinking', 1)).not.toBe(scopeCells('thinking', 2))
-    expect(scopeCells('thinking', 7), 'deterministic').toBe(scopeCells('thinking', 7))
-    expect(scopeCells('running', 1)).not.toBe(scopeCells('running', 2))
+    expect(json).toContain('{"color":"suggestion"},"children":["◉"]')
+    expect(json).toContain(`"key":"cz-mission-trace","columns":${TRACE_COLUMNS}`)
+    expect(json).toContain('"key":"cz-mission-clock","columns":7')
+    expect(json, 'a spacer pushes the clock to the right edge').toContain('"flexGrow":1')
+    expect(textOf(think), 'no invented tokens per second').not.toContain('tok/s')
+    for (let f = 0; f < 60; f++) {
+      const levels = sparkLevels(f)
+      expect(levels.length).toBe(TRACE_COLUMNS)
+      for (const v of levels) expect(v >= 0 && v <= 7).toBe(true)
+    }
+    expect(new Set(sparkLevels(0)).size, 'the trace moves up and down').toBeGreaterThan(3)
+    expect(sparkLevels(6).slice(0, -1), 'it scrolls left a bar at a time').toEqual(sparkLevels(3).slice(1))
+    expect(traceCells('thinking', 7), 'deterministic').toBe(traceCells('thinking', 7))
+    expect(traceCells('thinking', 0)).not.toBe(traceCells('thinking', 30))
+    expect(textOf(MISSION.live({ mode: 'writing', detail: '', elapsedMs: 0 }, 0, ctx))).toMatch(/^◉XMIT/)
+  })
+
+  test('running: the step as the look tags it, the target, a filling green bar and the clock', async () => {
+    const ctx = ctxOf()
+    const run = MISSION.live({ mode: 'running', detail: 'npm test', activity: 'Running', elapsedMs: 0 }, 0, ctx)
+    expect(textOf(run)).toMatch(/^◉EXECnpm test/)
+    expect(textOf(run), 'the verb is never printed twice').not.toContain('Running')
+    expect(JSON.stringify(run)).toContain(`"key":"cz-mission-bar","columns":${BAR_COLUMNS}`)
+    expect(textOf(MISSION.live({ mode: 'running', detail: 'src/a.ts', activity: 'Reading', elapsedMs: 0 }, 0, ctx))).toMatch(/^◉READsrc\/a\.ts/)
+    expect(textOf(MISSION.live({ mode: 'running', detail: 'src/a.ts', activity: 'Editing', elapsedMs: 0 }, 0, ctx))).toMatch(/^◉EDIT/)
+    expect(textOf(MISSION.live({ mode: 'running', detail: 'x', elapsedMs: 0 }, 0, ctx)), 'EXEC without a step').toMatch(/^◉EXEC/)
+    let grew = false
+    for (let f = 0; f < 60; f++) {
+      const w = barFill(f)
+      expect(w >= 0 && w <= BAR_COLUMNS).toBe(true)
+      if (barFill(f + 1) > w) grew = true
+    }
+    expect(grew).toBe(true)
+    expect(traceCells('running', 0)).not.toBe(traceCells('running', 10))
   })
 
   test('the mission clock is T+mm:ss and always seven cells', async () => {
@@ -259,9 +340,9 @@ describe('mission control look', () => {
   test('the desktop gets plain text: no raster in any member', async () => {
     const ctx = ctxOf({ els: DESKTOP_ELS, surface: 'desktop' })
     for (const tree of everything(ctx)) expect(JSON.stringify(tree) ?? '').not.toContain('Raster')
-    const text = textOf(MISSION.live({ mode: 'running', detail: 'Read a.ts', elapsedMs: 3_000 }, 0, ctx))
-    expect(text).toContain('EXEC')
-    expect(text).toContain('T+00:03')
+    const text = textOf(MISSION.live({ mode: 'running', detail: 'npm test', activity: 'Running', elapsedMs: 3_000 }, 0, ctx))
+    expect(text).toMatch(/^◉EXECnpm test[█░]+T\+00:03$/)
+    expect(textOf(MISSION.live({ mode: 'thinking', detail: '', elapsedMs: 3_000 }, 0, ctx))).toMatch(/^◉THINK[▁▂▃▄▅▆▇█]+T\+00:03$/)
     // A desktop table that still offers a Raster gets text too.
     expect(JSON.stringify(MISSION.live({ mode: 'thinking', detail: '', elapsedMs: 0 }, 0, ctxOf({ surface: 'desktop' })))).not.toContain('Raster')
   })
@@ -314,13 +395,5 @@ describe('mission control look', () => {
     }
     const longest = JSON.stringify(MISSION.userMessage('y'.repeat(50_000), ctxOf()))
     expect(longest.length).toBeLessThan(12_000)
-  })
-
-  test('the meter is proportional to lines changed and capped at sixty', async () => {
-    expect(meterCells(0, 0)).toEqual({ ok: 0, err: 0, empty: 10 })
-    expect(meterCells(1, 0)).toEqual({ ok: 1, err: 0, empty: 9 })
-    expect(meterCells(30, 0)).toEqual({ ok: 5, err: 0, empty: 5 })
-    expect(meterCells(300, 300)).toEqual({ ok: 5, err: 5, empty: 0 })
-    expect(meterCells(3, 1).ok + meterCells(3, 1).err).toBe(1)
   })
 })
