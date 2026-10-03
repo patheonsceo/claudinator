@@ -73,6 +73,8 @@ export type SessionModel = {
   shownTurns: Set<number>
   /** The turn just finished and its receipt not drawn yet. */
   isReceiptPending: boolean
+  /** The last call started this turn, for the live line between calls. */
+  lastStep: Running | null
   /** The current turn's calls as spans of time, to measure tools and waiting without counting overlaps twice. */
   spans: Span[]
 }
@@ -119,6 +121,7 @@ export function createModel(): SessionModel {
     shownTurns: new Set(),
     isReceiptPending: false,
     spans: [],
+    lastStep: null,
   }
 }
 
@@ -137,6 +140,7 @@ export function startTurn(m: SessionModel, now: number): void {
   m.marks.delete('')
   m.lastActivityAt = now
   m.spans = []
+  m.lastStep = null
   const record: TurnRecord = { turn: m.turn, prompt: m.pendingPrompt, startedAt: now, add: 0, del: 0, files: 0 }
   if (m.pendingRowId !== undefined) record.userRowId = m.pendingRowId
   m.turns.push(record)
@@ -183,6 +187,7 @@ export function toolStarted(m: SessionModel, id: string, tool: string, input: un
   m.toolStart.set(id, now)
   m.lastActivityAt = now
   m.running.set(id, { tool, input, startedAt: now })
+  if (!isSubagent) m.lastStep = { tool, input, startedAt: now }
   if (isSubagent) {
     m.subagentCalls.add(id)
     return
@@ -312,10 +317,16 @@ export function completeTurn(m: SessionModel, now: number, contextPercent?: numb
 
 /** A short title: the answer's first sentence, else the prompt's, at most about 60 characters. */
 export function headlineOf(answer: string | undefined, prompt: string): string {
+  // The first sentence that says something: a bare opener ("Done.", "Perfect!") is skipped.
   const firstSentence = (text: string): string => {
-    const plain = printable(text, 2000).replace(/[*_`#>]+/g, '').replace(/\s+/g, ' ').trim()
-    const match = plain.match(/^(.+?)[.!?:](?:\s|$)/)
-    return (match?.[1] ?? plain).trim()
+    let rest = printable(text, 2000).replace(/[*_`#>]+/g, '').replace(/\s+/g, ' ').trim()
+    while (rest !== '') {
+      const match = rest.match(/^(.+?)[.!?:](?:\s|$)/)
+      const sentence = (match?.[1] ?? rest).trim()
+      if (sentence.split(' ').length > 2 || !match) return sentence.split(' ').length > 2 ? sentence : ''
+      rest = rest.slice(match[0].length).trim()
+    }
+    return ''
   }
   let title = firstSentence(answer ?? '') || firstSentence(prompt)
   if (title.length > 60) {
@@ -393,6 +404,11 @@ export function turnOfRow(m: SessionModel, requestId: string, now: number): numb
 
 export function durationOf(m: SessionModel, id: string): number | undefined {
   return m.toolMs.get(id)
+}
+
+/** The step running now, else the last one started this turn: what the live line names between calls. */
+export function latestStep(m: SessionModel): Running | undefined {
+  return latestRunning(m) ?? m.lastStep ?? undefined
 }
 
 export function latestRunning(m: SessionModel): Running | undefined {

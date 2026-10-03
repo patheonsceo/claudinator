@@ -83,7 +83,7 @@ export function timeStripRow(ctx: Ctx, data: TimeStripData, style: StripColors &
   })
   const legend = (color: string, label: string, ms: number): RenderElement[] => [
     Text({ color: tone(color, ctx.fade), children: '■' }),
-    Text({ color: tone('inactive', ctx.fade), children: `${label} ${clockLabel(ms)}` }),
+    Text({ color: tone('inactive', ctx.fade), children: `${label} ${ms < 1000 ? formatDuration(ms) : clockLabel(ms)}` }),
   ]
   return Box({
     flexDirection: 'column',

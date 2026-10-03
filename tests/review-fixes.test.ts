@@ -10,7 +10,7 @@ import { PRISM } from '../src/looks/prism'
 import { clockCells as hairlineClock } from '../src/looks/hairline/live'
 import { clockCells as prismClock } from '../src/looks/prism/live'
 import { factsOf, isFootnotable } from '../src/engine/tool-facts'
-import { withMarks } from '../src/looks/common'
+import { stripColors, timeStripRow, withMarks } from '../src/looks/common'
 import { SESSION, assistantInput, ctxOf, startsSession, textOf, toolGroupInput, toolUseInput, turnDurationInput } from './fixtures'
 
 const read = (file: string) => ({ file_path: file })
@@ -337,5 +337,33 @@ describe('paths that are the project itself', () => {
     expect(splitPath('/work', '/work')).toEqual({ dir: '', base: './' })
     expect(splitPath('/work/', '/work')).toEqual({ dir: '', base: './' })
     expect(splitPath('/work/src/a.ts', '/work')).toEqual({ dir: 'src/', base: 'a.ts' })
+  })
+})
+
+describe('second-round screenshot fixes', () => {
+  test('a headline skips a bare opener such as "Done." for the sentence that says what happened', async () => {
+    expect(Model.headlineOf('Done. Fixed the total() function to multiply price by qty.', 'fix it')).toBe('Fixed the total() function to multiply price by qty')
+    expect(Model.headlineOf('Perfect! All three tests pass now.', 'x')).toBe('All three tests pass now')
+    expect(Model.headlineOf('Done.', 'fix the cart total')).toBe('Fix the cart total')
+    expect(Model.headlineOf('Fixed the refresh race. It works.', 'x')).toBe('Fixed the refresh race')
+  })
+
+  test('between calls the live line still names the last step', async () => {
+    const m = Model.createModel()
+    Model.startTurn(m, 0)
+    Model.toolStarted(m, 'b', 'Bash', { command: 'npm test' }, 100)
+    Model.toolFinished(m, 'b', 'Bash', { command: 'npm test' }, 200, false)
+    expect(Model.latestRunning(m)).toBeUndefined()
+    expect(Model.latestStep(m)?.tool).toBe('Bash')
+    Model.completeTurn(m, 300)
+    Model.startTurn(m, 400)
+    expect(Model.latestStep(m)).toBeUndefined()
+  })
+
+  test('short times in the strip legend read in seconds, longer ones in minutes', async () => {
+    const tree = timeStripRow(ctxOf({ columns: 120 }), { thinkingMs: 78_000, toolsMs: 600, waitingMs: 0 }, stripColors('hairline', true)) as { children: unknown[] }
+    const legend = textOf(tree.children[1])
+    expect(legend).toContain('thinking 1:18')
+    expect(legend).toContain('tools 0.6s')
   })
 })
