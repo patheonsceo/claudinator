@@ -6,7 +6,7 @@
 claude plugin validate --strict .                          # the marketplace
 claude plugin validate --strict .claude-plugin/plugin.json # the plugin and its mod: lists every hook and API call
 claude plugin test .
-node --test tools/ && node tools/themes.mjs --check   # theme files match their palettes
+node --test tools/themes.test.mjs && node tools/themes.mjs --check   # theme files match their palettes
 npx -y -p typescript@5 tsc -p .   # after one `claude --plugin-dir .` load has written the types
 ```
 
