@@ -105,7 +105,7 @@ describe('session model for the full suite', () => {
   })
 
   test('titles come from the first sentence of the answer, or the prompt', async () => {
-    expect(Model.headlineOf('**Done.** Fixed the race in `refresh()`, and added tests.', 'x')).toBe('Done')
+    expect(Model.headlineOf('**Done.** Fixed the race in `refresh()`, and added tests.', 'x')).toBe('Fixed the race in refresh(), and added tests')
     expect(Model.headlineOf('Fixed the race in refresh() so only one tab rotates the token at a time across every window', 'x')).toBe('Fixed the race in refresh() so only one tab rotates the…')
     expect(Model.headlineOf('', 'add a dark mode toggle to settings')).toBe('Add a dark mode toggle to settings')
     expect(Model.headlineOf(undefined, '')).toBe('')

@@ -540,7 +540,7 @@ export const register: Register = (on, opts) => {
     const look = LOOKS[settings.look]
     if (!look) return next(e)
     const elapsed = model.isWorking ? (await $.clock.now()) - model.turnStartedAt : 0
-    const state = { ...liveStateOf(e.props.mode, Model.latestRunning(model), elapsed, cwd, e.props.message), inator: settings.ingredients.inator, isDark }
+    const state = { ...liveStateOf(e.props.mode, Model.latestStep(model), elapsed, cwd, e.props.message), inator: settings.ingredients.inator, isDark }
     live = e.surface === 'terminal' ? { requestId: e.requestId, state } : null
     return look.live(state, frame, ctxOf(e, $.ui.resolve(e), settings, 0))
   }).catch(async ($, e, next) => next(e))
