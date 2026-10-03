@@ -18,14 +18,15 @@ Thanks for wanting to help. Claudinator is a design-led project, so the bar is "
    Saving a file reloads the mod in that session.
 3. Before you push, run:
    ```sh
-   claude plugin validate --strict .
+   claude plugin validate --strict .                          # the marketplace
+   claude plugin validate --strict .claude-plugin/plugin.json # the plugin and its mod
    claude plugin test .
    ```
 
 ## Pull request checklist
 
 - Tests cover the change, and `claude plugin test .` passes.
-- `claude plugin validate --strict .` passes.
+- `claude plugin validate --strict .` and `claude plugin validate --strict .claude-plugin/plugin.json` pass.
 - A visible change includes a GIF or screenshot in the pull request. A new look or ingredient also adds its demo tape under `demos/`.
 - `CHANGELOG.md` has an entry under `[Unreleased]`.
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), for example `feat(looks): add Sumi trace for tool groups`.
