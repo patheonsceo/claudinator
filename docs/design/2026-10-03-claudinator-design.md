@@ -155,9 +155,9 @@ types/index.d.ts          The $.state contract.
 ## 5. Settings
 
 - **Shape.** `{ version, look, ingredients: { recency, fileColors, footnotes, miniDiffs, timeStrip, headlines, quiet, attention, inator }, attention: { toastAfterSec, notifyAfterSec, sound, desktopNotify }, panes: { autoOpenChapters } }`. Unknown or invalid values fall back to defaults, and older versions are migrated.
-- **Where they live, in order of precedence.**
-  1. A project file `.claude/claudinator.json`, if present. It is read-only to Claudinator, for teams that want one look per repo.
-  2. The user's saved choice in `$.store`, shared by every session on the machine. The picker writes here.
+- **Where they live, in order of precedence.** (Revised 2026-10-03 after the v0.1 review: a project now sets defaults instead of overriding the user, so `/look off` always works and a project can never force anything on someone.)
+  1. The user's own choices in `$.store`, saved field by field: only what they changed in the picker or with `/look`. Shared by every session on the machine.
+  2. A project file `.claude/claudinator.json`, if present: defaults for everyone in that repo. It is read-only to Claudinator and can never turn on Quiet.
   3. Defaults from `userConfig` in the manifest, editable in `/config` (`look` as a picker, each ingredient as a boolean).
   4. Built-in defaults: Hairline with recency fade and mini diffs. The attention ladder (toast step only) joins the defaults when it ships in 0.5.0.
 - **Live values.** The resolved settings are mirrored into `$.state` atoms for the session. They are reloaded from the store in `classic.SessionStart` after `/clear`, `/resume` and `/branch`, which reset `$.state`.

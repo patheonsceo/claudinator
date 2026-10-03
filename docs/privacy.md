@@ -4,22 +4,22 @@ Claudinator runs inside Claude Code on your machine. This page lists everything 
 
 ## What it reads
 
-- The details Claude Code passes to each row it draws: tool names, inputs, results and durations.
-- Live events in the current session: the moment a prompt is sent (only the time, never the text), a turn starting and ending, and each tool call and whether it succeeded.
+- The details Claude Code passes to each row it draws: tool names, their full inputs (for example a command or the text of an edit), results and durations.
+- Live events in the current session: the moment a prompt is sent (only the time, never the text), a turn starting and ending, each tool call with its full input and whether it succeeded, and whether Claude Code asked your permission for it.
 - Your session's context usage, after each turn, for the receipt.
 - Its own settings: your saved choice, the plugin's options in `/config`, and `.claude/claudinator.json` in the current project if that file exists.
 
 ## What it keeps
 
 - Your look and ingredient choice, in Claude Code's plugin store (`~/.claude/plugins/store/`).
-- Nothing else. What it knows about the session lives in memory and is gone when the session ends. Claudinator writes no logs.
+- Nothing else on disk. In memory, for the current session only, it keeps each tool call's timing, the paths of files changed and their line counts, and a little bookkeeping to number turns. That is gone when the session ends. Claudinator writes no logs.
 
 ## What it never does
 
 - It makes no network requests.
 - It never reads Claude's history, memory or transcript files, and never reads the conversation back.
 - It never calls a model and never runs a program.
-- It never lets a project hide tool calls from you. A project's `.claude/claudinator.json` can choose a look, but it cannot turn on Quiet; only you can.
+- It never lets a project hide tool calls from you. A project's `.claude/claudinator.json` can suggest a look and ingredients, but it cannot turn on Quiet, and anything you choose yourself takes precedence over it.
 
 ## Check it yourself
 

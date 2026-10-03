@@ -10,7 +10,7 @@ Swiss-quiet. One column of icons, aligned metadata in your theme's dim color, an
 
 - **Tool rows:** `◇ Read`, `⌕ Search`, `◆ Edit`, `› Run`, the path with its folder dimmed, `+/−` for edits, and a thin duration bar that turns amber when a step takes three seconds or more.
 - **Groups:** a run of reads and commands reads as one phrase, such as *Read 2 files, ran 1 command*, with the file names underneath.
-- **Results:** collapse to their telling line, such as `╰ Tests: 24 passed`. Failures always stay visible.
+- **Results:** collapse to their telling line, such as `╰ Tests: 24 passed`. Failures always stay visible. Press `ctrl+o` for Claude Code's full transcript, or switch to Off to see every result in full.
 - **Live line:** breathing dots, a highlight sweeping across the word, what Claude is doing, and a stopwatch.
 - **Receipt:** `── ◆ Turn 7 · 2m 14s · 2 files · +103 −10 · 41% ctx ──`.
 
