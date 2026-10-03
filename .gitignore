@@ -10,3 +10,6 @@ demos/out/
 
 # Local agent workspaces
 .superpowers/
+
+# Agent worktrees (local only)
+.claude/worktrees/
