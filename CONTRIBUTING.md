@@ -6,6 +6,7 @@ Thanks for wanting to help. Claudinator is a design-led project, so the bar is "
 
 - **Report a bug.** Open an issue with the bug template, and include your Claude Code version, terminal, and whether you run fullscreen mode.
 - **Suggest a look or an ingredient.** Use the look request template, and attach a screenshot or mockup if you have one.
+- **Build a look.** Follow [docs/adding-a-look.md](docs/adding-a-look.md).
 - **Send a pull request.** For anything larger than a small fix, open an issue first so we can agree on the approach.
 
 ## Development setup

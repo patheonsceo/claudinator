@@ -6,6 +6,26 @@ All notable changes to Claudinator are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-03
+
+### Added
+- Six new looks, each with its own Claude Code theme and terminal color schemes: Broadsheet, Mission Control, Prism, Sumi, Blueprint and Thermal.
+- Ingredients: Headlines, Footnotes, Time strip, the Attention ladder (a toast at 30 seconds, and an opt-in sound and desktop notification at 2 minutes) and -inator mode.
+- Each look turns on its own default ingredients; your own choices always win.
+- Panes: Chapters (`/chapters`, jump to any turn), Ledger (`/ledger`) and Pins (`/pins`, `/pin`).
+- Combos (Daily driver, Storyteller, Show-off, Doof mode, Zen) and six-character share codes (`/look share`, `/look use <code>`).
+- `/config` options for the starting look and the attention ladder's sound and notification.
+- A guide to adding a look, and GIFs of every look, ingredient, pane and combo.
+
+### Changed
+- The picker offers every look on `1` to `8`, every ingredient on its letter key, and the combos.
+- `/config` no longer offers each ingredient; looks bring their defaults and the picker saves your choices.
+
+### Security
+- A project file cannot turn on Quiet or Footnotes, and a look it picks never brings them.
+- Every path, command and tool name is made printable before any look draws it.
+- Notification text reaches `notify-send` and `osascript` as plain arguments, never as options or script.
+
 ## [0.1.0] - 2026-10-03
 
 ### Added
@@ -18,5 +38,6 @@ All notable changes to Claudinator are recorded here. The format follows
 - Design spec: looks, ingredients, panes, settings, data handling, testing, media and release process, with evidence from a feasibility spike.
 - Repository foundation: README, license, contribution and security policies, issue and pull request templates.
 
-[Unreleased]: https://github.com/patheonsceo/claudinator/compare/claudinator--v0.1.0...HEAD
+[Unreleased]: https://github.com/patheonsceo/claudinator/compare/claudinator--v1.0.0...HEAD
+[1.0.0]: https://github.com/patheonsceo/claudinator/compare/claudinator--v0.1.0...claudinator--v1.0.0
 [0.1.0]: https://github.com/patheonsceo/claudinator/releases/tag/claudinator--v0.1.0
