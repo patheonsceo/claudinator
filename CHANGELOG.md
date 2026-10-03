@@ -9,7 +9,7 @@ All notable changes to Claudinator are recorded here. The format follows
 ## [1.0.0] - 2026-10-03
 
 ### Added
-- Six new looks, each with its own Claude Code theme and terminal color schemes: Broadsheet, Mission Control, Prism, Sumi, Blueprint and Thermal.
+- Five new looks, each with its own Claude Code theme and terminal color schemes: Broadsheet, Mission Control, Prism, Sumi and Blueprint.
 - Ingredients: Headlines, Footnotes, Time strip, the Attention ladder (a toast at 30 seconds, and an opt-in sound and desktop notification at 2 minutes) and -inator mode.
 - Each look turns on its own default ingredients; your own choices always win.
 - Panes: Chapters (`/chapters`, jump to any turn), Ledger (`/ledger`) and Pins (`/pins`, `/pin`).
@@ -18,7 +18,7 @@ All notable changes to Claudinator are recorded here. The format follows
 - A guide to adding a look, and GIFs of every look, ingredient, pane and combo.
 
 ### Changed
-- The picker offers every look on `1` to `8`, every ingredient on its letter key, and the combos.
+- The picker offers every look on `1` to `6` and Off on `7`, every ingredient on its letter key, and the combos.
 - `/config` no longer offers each ingredient; looks bring their defaults and the picker saves your choices.
 
 ### Security

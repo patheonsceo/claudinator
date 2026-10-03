@@ -4,7 +4,7 @@
 // `declare module 'claude-code'` block below, a bare `Settings` would resolve
 // to Claude Code's own exported Settings type.
 
-export type LookId = 'hairline' | 'broadsheet' | 'mission' | 'prism' | 'sumi' | 'blueprint' | 'thermal' | 'off'
+export type LookId = 'hairline' | 'broadsheet' | 'mission' | 'prism' | 'sumi' | 'blueprint' | 'off'
 
 export type IngredientId = 'recency' | 'miniDiffs' | 'fileColors' | 'quiet' | 'headlines' | 'footnotes' | 'timeStrip' | 'attention' | 'inator'
 

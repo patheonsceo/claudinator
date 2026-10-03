@@ -35,13 +35,14 @@ describe('picker', () => {
     ;(off?.onPress as () => void)()
     ;(quiet?.onPress as () => void)()
     expect(calls).toEqual(['look:off', 'toggle:quiet'])
-    expect(off?.hotkey).toBe('8')
+    expect(off?.hotkey).toBe('7')
     expect(quiet?.hotkey).toBe('q')
   })
 
   test('every look and every ingredient is there', async () => {
     const text = textOf(pickerView(TERMINAL_ELS, DEFAULT_SETTINGS, info, noop))
-    for (const label of ['Hairline', 'Broadsheet', 'Mission Control', 'Prism', 'Sumi', 'Blueprint', 'Thermal', 'Off']) expect(text).toContain(label)
+    for (const label of ['Hairline', 'Broadsheet', 'Mission Control', 'Prism', 'Sumi', 'Blueprint', 'Off']) expect(text).toContain(label)
+    expect(text).not.toContain('Thermal')
     for (const label of ['Headlines', 'Footnotes', 'Time strip', 'Attention ladder', '-inator mode']) expect(text).toContain(label)
   })
 

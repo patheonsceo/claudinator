@@ -33,7 +33,6 @@
         "prism",
         "sumi",
         "blueprint",
-        "thermal",
         "off"
       ],
       "default": "hairline"

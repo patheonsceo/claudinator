@@ -4,7 +4,7 @@ import { INGREDIENT_HOTKEYS, INGREDIENT_IDS, LOOK_IDS, layerOf, projectLayerOf, 
 
 describe('settings for every look', () => {
   test('seven looks and Off, in picker order', async () => {
-    expect(LOOK_IDS).toEqual(['hairline', 'broadsheet', 'mission', 'prism', 'sumi', 'blueprint', 'thermal', 'off'])
+    expect(LOOK_IDS).toEqual(['hairline', 'broadsheet', 'mission', 'prism', 'sumi', 'blueprint', 'off'])
   })
 
   test('nine ingredients, each with its own hotkey', async () => {

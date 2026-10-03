@@ -1,6 +1,6 @@
 # Themes
 
-Claudinator restyles rows inside Claude Code. Two more layers finish a look, and all seven looks ship both, dark and light:
+Claudinator restyles rows inside Claude Code. Two more layers finish a look, and all six looks ship both, dark and light:
 
 | Layer | What it colors | How you turn it on |
 |---|---|---|
@@ -17,7 +17,7 @@ Run `/theme` and pick the look's theme, such as **Claudinator Prism Dark** (mark
 { "theme": "custom:claudinator:prism-dark" }
 ```
 
-The looks' ids are `hairline`, `broadsheet`, `mission`, `prism`, `sumi`, `blueprint` and `thermal`. Claudinator reads your theme setting to pick its own colors for light or dark, so a light theme gives the looks their light colors too.
+The looks' ids are `hairline`, `broadsheet`, `mission`, `prism`, `sumi` and `blueprint`. Claudinator reads your theme setting to pick its own colors for light or dark, so a light theme gives the looks their light colors too.
 
 ## Terminal color schemes
 
