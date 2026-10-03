@@ -2,6 +2,7 @@ import { describe, expect, test } from 'claude-code/testing'
 
 import { DEFAULT_SETTINGS, toggled } from '../src/engine/settings'
 import { BROADSHEET } from '../src/looks/broadsheet'
+import { typedOf } from '../src/looks/broadsheet/live'
 import { roman, sentenceOf } from '../src/looks/broadsheet/prose'
 import type { LiveMode, ReceiptData, ToolRow } from '../src/looks/look'
 import { DESKTOP_ELS, ctxOf, textOf } from './fixtures'
@@ -17,6 +18,35 @@ const fullReceipt: ReceiptData = {
   timeStrip: { thinkingMs: 6_000, toolsMs: 2_000, waitingMs: 1_000 },
 }
 
+/** The props of the first Text whose own string child is `text`. */
+function textNode(tree: unknown, text: string): Record<string, unknown> | undefined {
+  if (Array.isArray(tree)) {
+    for (const t of tree) {
+      const hit = textNode(t, text)
+      if (hit) return hit
+    }
+    return undefined
+  }
+  if (typeof tree !== 'object' || !tree) return undefined
+  const node = tree as { type?: string; props?: Record<string, unknown>; children?: unknown[] }
+  if (node.type === 'Text' && node.children?.length === 1 && node.children[0] === text) return node.props
+  return textNode(node.children ?? [], text)
+}
+
+/** The characters a raster's cells hold. */
+function rasterText(cells: string): string {
+  const abc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+  const bytes: number[] = []
+  for (let i = 0; i < cells.length; i += 4) {
+    const n = [0, 1, 2, 3].map(k => Math.max(0, abc.indexOf(cells[i + k] ?? 'A')))
+    const v = ((n[0] ?? 0) << 18) | ((n[1] ?? 0) << 12) | ((n[2] ?? 0) << 6) | (n[3] ?? 0)
+    bytes.push((v >> 16) & 255, (v >> 8) & 255, v & 255)
+  }
+  let out = ''
+  for (let i = 0; i + 11 < bytes.length; i += 12) out += String.fromCharCode((bytes[i] ?? 0) | ((bytes[i + 1] ?? 0) << 8))
+  return out
+}
+
 /** Every member's tree for one context, for checks that hold everywhere. */
 function everything(ctx: ReturnType<typeof ctxOf>): unknown[] {
   return [
@@ -28,7 +58,7 @@ function everything(ctx: ReturnType<typeof ctxOf>): unknown[] {
     BROADSHEET.userMessage('fix the cart', ctx),
     BROADSHEET.headline({ turn: 7, title: 'The cart, totalled' }, ctx),
     BROADSHEET.receipt(fullReceipt, ctx),
-    ...(['thinking', 'writing', 'running'] as LiveMode[]).map(mode => BROADSHEET.live({ mode, detail: 'Run npm test', elapsedMs: 5_000 }, 12, ctx)),
+    ...(['thinking', 'writing', 'running'] as LiveMode[]).map(mode => BROADSHEET.live({ mode, detail: 'npm test', activity: 'Running', elapsedMs: 5_000 }, 12, ctx)),
   ]
 }
 
@@ -64,7 +94,7 @@ describe('broadsheet prose', () => {
 describe('broadsheet rows', () => {
   test('a plain call is one italic sentence with its time at the right', async () => {
     const tree = BROADSHEET.toolRow(row({ input: { file_path: '/work/src/cart.js' }, durationMs: 200 }), ctxOf())
-    expect(textOf(tree)).toMatch(/^↳Read src\/cart\.js\./)
+    expect(textOf(tree)).toMatch(/^↳Read cart\.js in src\/\./)
     expect(textOf(tree)).toContain('0.2s')
     expect(JSON.stringify(tree)).toContain('"italic":true')
   })
@@ -88,13 +118,40 @@ describe('broadsheet rows', () => {
   test('a failure reads as a sentence in the error color', async () => {
     const tree = BROADSHEET.toolRow(row({ tool: 'Bash', input: { command: 'npm test' }, isErrored: true }), ctxOf())
     expect(textOf(tree)).toContain('✗')
-    expect(textOf(tree)).toContain('Ran npm test. It failed.')
+    expect(textOf(tree), 'a colon hands over to the detail line below').toContain('Ran npm test. It failed:')
     expect(JSON.stringify(tree)).toContain('"color":"error"')
     expect(textOf(BROADSHEET.toolRow(row({ tool: 'Bash', input: { command: 'sleep 9' }, isInterrupted: true }), ctxOf()))).toContain('It was interrupted.')
   })
 
+  test('an edit sets its verb upright and a new file reads as Created', async () => {
+    const tree = BROADSHEET.toolRow(edit, ctxOf())
+    expect(textNode(tree, 'Edited ')?.italic, 'the verb is roman, like the lookbook').toBeUndefined()
+    expect(textNode(tree, ' in src/')?.italic).toBe(true)
+    const created = textOf(BROADSHEET.toolRow(row({ tool: 'Write', input: { file_path: '/work/src/auth/refresh-lock.ts', content: 'a\nb' } }), ctxOf()))
+    expect(created).toMatch(/^✎Created refresh-lock\.ts in src\/auth\//)
+    expect(created).toContain('+2')
+    expect(textOf(BROADSHEET.toolRow(row({ tool: 'Write', isRunning: true, input: { file_path: '/work/a.ts' } }), ctxOf()))).toContain('Creating a.ts')
+  })
+
+  test('a group names its reads by folder and sets each failure on its own line', async () => {
+    const rows = [
+      row({ id: 'a', input: { file_path: '/work/src/auth/session.ts' }, durationMs: 400 }),
+      row({ id: 'b', input: { file_path: '/work/src/auth/token.ts' }, durationMs: 600 }),
+      row({ id: 'c', tool: 'Bash', input: { command: 'npm test' }, isErrored: true, durationMs: 3_000 }),
+      row({ id: 'd', tool: 'Grep', input: { pattern: 'refreshToken' }, durationMs: 100 }),
+    ]
+    const text = textOf(BROADSHEET.toolGroup(rows, ctxOf()))
+    expect(text).toContain('↳Read 2 files in src/auth/.')
+    expect(text).toContain('1.0s')
+    expect(text).toContain('✗Ran npm test. It failed.')
+    expect(text).toContain('↳Searched for “refreshToken”.')
+    expect(text.indexOf('Read 2 files')).toBeLessThan(text.indexOf('npm test'))
+    expect(text.indexOf('npm test')).toBeLessThan(text.indexOf('refreshToken'))
+  })
+
   test('a running call speaks in the present and trails off', async () => {
     expect(textOf(BROADSHEET.toolRow(row({ isRunning: true, input: { file_path: '/work/a.ts' } }), ctxOf()))).toContain('Reading a.ts…')
+    expect(textOf(BROADSHEET.toolRow(row({ isRunning: true, input: { file_path: '/work/src/a.ts' } }), ctxOf()))).toContain('Reading a.ts in src/…')
     expect(textOf(BROADSHEET.toolRow(row({ tool: 'Edit', isRunning: true, input: { file_path: '/work/a.ts' } }), ctxOf()))).toContain('…')
   })
 
@@ -159,6 +216,15 @@ describe('broadsheet rows', () => {
     }
   })
 
+  test('a result is an indented italic detail line, like the lookbook', async () => {
+    const tree = BROADSHEET.toolResult({ tool: 'Bash', output: 'expected “released”, got “held”', isErrored: true }, ctxOf())
+    const json = JSON.stringify(tree)
+    expect(json).toContain('"paddingLeft":4')
+    expect(json).toContain('"italic":true')
+    expect(json).toContain('"color":"inactive"')
+    expect(textOf(tree)).not.toContain('— ')
+  })
+
   test('the quiet line is a dim italic aside', async () => {
     expect(textOf(BROADSHEET.quietLine(3, ctxOf()))).toContain('(3 steps omitted)')
     expect(textOf(BROADSHEET.quietLine(1, ctxOf()))).toContain('(1 step omitted)')
@@ -168,6 +234,7 @@ describe('broadsheet rows', () => {
     expect(textOf(BROADSHEET.toolResult({ tool: 'Bash', output: { stdout: 'ok\nTests: 24 passed', stderr: '' }, isErrored: false }, ctxOf()))).toContain('Tests: 24 passed')
     expect(textOf(BROADSHEET.toolResult({ tool: 'Bash', output: 'Error: exit 1', isErrored: true }, ctxOf()))).toContain('Error: exit 1')
     expect(textOf(BROADSHEET.toolResult({ tool: 'Read', output: {}, isErrored: false }, ctxOf()))).toBe('')
+    expect(textOf(BROADSHEET.toolResult({ tool: 'Bash', output: '', isErrored: true }, ctxOf())).length).toBeGreaterThan(0)
     expect(BROADSHEET.toolResult({ tool: 'mcp__x__y', output: {}, isErrored: false }, ctxOf())).toBeNull()
   })
 })
@@ -178,6 +245,12 @@ describe('broadsheet turn', () => {
     expect(textOf(tree)).toContain('❝')
     expect(textOf(tree)).toContain('fix the cart\nand test it')
     expect(JSON.stringify(tree)).toContain('"italic":true')
+  })
+
+  test('the pull quote is signed with a dim byline', async () => {
+    const tree = BROADSHEET.userMessage('fix it', ctxOf())
+    expect(textOf(tree)).toMatch(/^❝fix it— you$/)
+    expect(textNode(tree, '— you')?.color).toBe('inactive')
   })
 
   test('the headline is a numbered chapter over a thin rule', async () => {
@@ -194,6 +267,8 @@ describe('broadsheet turn', () => {
     const text = textOf(tree)
     expect(text).toContain('❦ set in 2 min 14 s · 2 files · +103 −10 · 41% of context ❦')
     expect(text.indexOf('¹')).toBeLessThan(text.indexOf('set in'))
+    expect(text).toContain('Notes¹')
+    expect(text.indexOf('Notes'), 'footnotes sit under a Notes head').toBeLessThan(text.indexOf('¹'))
     expect(text).toContain('Read a.ts · 0.1s')
     expect(text.indexOf('thinking 0:06')).toBeGreaterThan(text.indexOf('set in'))
     expect(JSON.stringify(tree)).toContain('"justifyContent":"center"')
@@ -234,7 +309,7 @@ describe('broadsheet live line', () => {
     const widths = new Set<string>()
     for (const mode of modes) {
       for (const isInator of [false, true]) {
-        const state = { mode, detail: mode === 'running' ? 'Run ' + 'z'.repeat(200) : '', elapsedMs: 1_000, inator: isInator }
+        const state = { mode, detail: mode === 'running' ? 'z'.repeat(200) : '', activity: mode === 'running' ? 'Running' : undefined, elapsedMs: 1_000, inator: isInator }
         for (let f = 0; f < 30; f++) {
           const frames = BROADSHEET.liveFrames({ ...state, elapsedMs: f * 100_000 }, f * 7)
           widths.add(frames.map(fr => `${fr.key}:${fr.columns}`).join(','))
@@ -245,10 +320,49 @@ describe('broadsheet live line', () => {
     expect(widths.size).toBe(1)
   })
 
+  test('a pen leads the live line in every mode and surface', async () => {
+    const desktop = ctxOf({ surface: 'desktop', els: DESKTOP_ELS })
+    for (const mode of ['thinking', 'writing', 'running'] as LiveMode[]) {
+      for (const ctx of [ctxOf(), desktop]) {
+        const tree = BROADSHEET.live({ mode, detail: 'npm test', activity: 'Running', elapsedMs: 0 }, 12, ctx)
+        expect(textOf(tree).startsWith('✎'), `${mode} on ${ctx.surface}`).toBe(true)
+        expect(textNode(tree, '✎')?.color).toBe('suggestion')
+      }
+    }
+  })
+
+  test('thinking types out what Claude is considering, then rests with a blinking caret', async () => {
+    const state = { mode: 'thinking' as LiveMode, detail: '', elapsedMs: 0 }
+    const early = typedOf(state, 3)
+    const late = typedOf(state, 40)
+    expect(early.text.length).toBeGreaterThan(0)
+    expect(late.text.startsWith(early.text)).toBe(true)
+    expect(late.text).toMatch(/^considering /)
+    expect(late.text).not.toContain('…')
+    expect(early.caretOn).toBe(true)
+    const blinks = new Set([40, 45, 50, 55].map(f => typedOf(state, f).caretOn))
+    expect(blinks.size).toBe(2)
+    expect(typedOf(state, 75).text, 'the next phrase starts over').not.toBe(late.text)
+    const cells = BROADSHEET.liveFrames(state, 40)[0]?.cells ?? ''
+    expect(rasterText(cells)).toContain(late.text + '▌')
+  })
+
+  test('running narrates the step once, with no caret', async () => {
+    const desktop = ctxOf({ surface: 'desktop', els: DESKTOP_ELS })
+    const running = { mode: 'running' as LiveMode, detail: 'src/cart.js', activity: 'Reading', elapsedMs: 3_100 }
+    expect(textOf(BROADSHEET.live(running, 0, desktop))).toContain('✎reading src/cart.js…')
+    const typed = typedOf(running, 0)
+    expect(typed.text).toBe('reading src/cart.js…')
+    expect(typed.caretOn).toBe(false)
+    expect(typedOf({ ...running, activity: 'Running', detail: 'npm test' }, 0).text).toBe('running npm test…')
+    expect(typedOf({ mode: 'running', detail: '', elapsedMs: 0 }, 0).text).toBe('at work…')
+    expect(typedOf({ mode: 'running', detail: 'Retrying in 3s', elapsedMs: 0 }, 0).text).toBe('retrying in 3s…')
+  })
+
   test('the typewriter types a phrase letter by letter', async () => {
     const desktop = ctxOf({ surface: 'desktop', els: DESKTOP_ELS })
-    expect(textOf(BROADSHEET.live({ mode: 'writing', detail: '', elapsedMs: 0 }, 0, desktop))).toContain('setting the reply in type…')
-    expect(textOf(BROADSHEET.live({ mode: 'running', detail: 'Run npm test', elapsedMs: 0 }, 0, desktop))).toContain('running npm test…')
+    expect(textOf(BROADSHEET.live({ mode: 'writing', detail: '', elapsedMs: 0 }, 0, desktop))).toContain('setting the reply in type')
+    expect(textOf(BROADSHEET.live({ mode: 'running', detail: 'npm test', activity: 'Running', elapsedMs: 0 }, 0, desktop))).toContain('running npm test…')
     const a = BROADSHEET.liveFrames({ mode: 'thinking', detail: '', elapsedMs: 0 }, 2)[0]?.cells
     const b = BROADSHEET.liveFrames({ mode: 'thinking', detail: '', elapsedMs: 0 }, 9)[0]?.cells
     expect(a).not.toBe(b)

@@ -7,15 +7,21 @@ import type { Ctx, HeadlineData, ReceiptData } from '../look'
 import { roman, spelledDuration } from './prose'
 import { C, NARROW_COLUMNS, delta, fixed, grow, it, rule, txt } from './style'
 
-/** The prompt as a pull quote: an accent mark, then the words in italic. */
+/** The prompt as a pull quote: an accent mark, the words in italic, then a dim `— you` byline. */
 export function userMessage(text: string, ctx: Ctx): RenderElement {
   const { Box, Text } = ctx.els
   return Box({
-    flexDirection: 'row',
-    columnGap: 1,
+    flexDirection: 'column',
     children: [
-      fixed(ctx, txt(ctx, C.accent, '❝')),
-      grow(ctx, Text({ color: tone(C.text, ctx.fade), italic: true, wrap: 'wrap', children: printable(text, 4000, { keepNewlines: true }) })),
+      Box({
+        flexDirection: 'row',
+        columnGap: 1,
+        children: [
+          fixed(ctx, txt(ctx, C.accent, '❝')),
+          grow(ctx, Text({ color: tone(C.text, ctx.fade), italic: true, wrap: 'wrap', children: printable(text, 4000, { keepNewlines: true }) })),
+        ],
+      }),
+      Box({ paddingLeft: 2, children: txt(ctx, C.dim, '— you') }),
     ],
   })
 }
@@ -55,12 +61,12 @@ function colophon(data: ReceiptData, ctx: Ctx): RenderElement {
   return ctx.els.Text({ wrap: 'truncate-end', children: runs })
 }
 
-/** The close of a turn: footnotes under a short rule, the colophon, then the time strip. */
+/** The close of a turn: footnotes under a `Notes` head, the colophon, then the time strip. */
 export function receipt(data: ReceiptData, ctx: Ctx): RenderElement {
   const { Box } = ctx.els
   const parts: RenderElement[] = []
   const notes = notesBlock(ctx, data.notes, { indent: 0, accent: C.accent, italic: true })
-  if (notes) parts.push(Box({ flexDirection: 'column', paddingLeft: 2, children: [txt(ctx, C.faint, '─'.repeat(12)), notes] }))
+  if (notes) parts.push(Box({ flexDirection: 'column', paddingLeft: 2, children: [it(ctx, C.dim, 'Notes', { bold: true }), notes] }))
   parts.push(centered(ctx, colophon(data, ctx)))
   if (ctx.settings.ingredients.inator) parts.push(centered(ctx, it(ctx, C.accent, `${inatorQuip(data.stats)}.`, { wrap: 'truncate-end' })))
   if (data.timeStrip && ctx.columns >= NARROW_COLUMNS) {
