@@ -213,7 +213,7 @@ describe('sumi turn pieces', () => {
     )
     const text = textOf(tree)
     expect(text.indexOf('Read a.ts · 0.1s')).toBeLessThan(text.indexOf('0:09'))
-    expect(text.indexOf('0:09')).toBeLessThan(text.indexOf('thinking 6.0s'))
+    expect(text.indexOf('0:09')).toBeLessThan(text.indexOf('thinking 0:06'))
     expect(text).toContain('━')
     expect(text).not.toContain('+')
     expect(props(tree, 'italic')).toContain(true)

@@ -209,8 +209,8 @@ describe('blueprint turn pieces', () => {
     expect(text).toContain('NOTE ¹ READ src/a.ts 0.2S')
     expect(text.indexOf('NOTE ¹')).toBeLessThan(text.indexOf('┌'))
     expect(text).toContain('0:09')
-    expect(text).toContain('▆')
-    expect(text.indexOf('▆')).toBeGreaterThan(text.indexOf('└'))
+    expect(text).toContain('■')
+    expect(text.indexOf('■')).toBeGreaterThan(text.indexOf('└'))
     const col = tree as unknown as { children: unknown[] }
     const boxLines = col.children.map(textOf).filter(l => /^[┌│├└]/.test(l))
     expect(boxLines.length, 'a compact one-row block').toBe(3)
@@ -306,7 +306,7 @@ describe('blueprint on every surface', () => {
     const tree = BLUEPRINT.receipt({ ...RECEIPT, title: 'A very long title that would never fit inside a sixty column terminal at all', timeStrip: { thinkingMs: 1, toolsMs: 1, waitingMs: 0 } }, ctx)
     const col = tree as unknown as { children: unknown[] }
     for (const line of col.children.map(textOf)) expect([...line].length).toBeLessThanOrEqual(60)
-    expect(textOf(tree)).not.toContain('▆')
+    expect(textOf(tree)).not.toContain('■■')
     for (const t of everything(ctx)) expect(textOf(t).length).toBeGreaterThan(0)
   })
 

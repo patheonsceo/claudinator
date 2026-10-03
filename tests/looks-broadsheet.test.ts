@@ -195,7 +195,7 @@ describe('broadsheet turn', () => {
     expect(text).toContain('❦ set in 2 min 14 s · 2 files · +103 −10 · 41% of context ❦')
     expect(text.indexOf('¹')).toBeLessThan(text.indexOf('set in'))
     expect(text).toContain('Read a.ts · 0.1s')
-    expect(text.indexOf('thinking 6.0s')).toBeGreaterThan(text.indexOf('set in'))
+    expect(text.indexOf('thinking 0:06')).toBeGreaterThan(text.indexOf('set in'))
     expect(JSON.stringify(tree)).toContain('"justifyContent":"center"')
     expect(JSON.stringify(tree), 'centered on the page, not on itself').toContain('"width":"100%"')
   })
@@ -263,7 +263,7 @@ describe('broadsheet everywhere', () => {
   test('narrow terminals keep rows intact and drop the time strip', async () => {
     const ctx = ctxOf({ columns: 60 })
     for (const tree of everything(ctx).slice(0, 8)) expect(textOf(tree).length).toBeGreaterThan(0)
-    expect(textOf(BROADSHEET.receipt(fullReceipt, ctx))).not.toContain('thinking 6.0s')
+    expect(textOf(BROADSHEET.receipt(fullReceipt, ctx))).not.toContain('thinking 0:06')
   })
 
   test('faded rows drop backgrounds and use the dim tokens', async () => {

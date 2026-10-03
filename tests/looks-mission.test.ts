@@ -198,8 +198,8 @@ describe('mission control look', () => {
     expect(text.indexOf('¹')).toBeLessThan(text.indexOf('╞'))
     expect(text).toContain('READ')
     expect(text).toContain('src/a.ts')
-    expect(text.indexOf('thinking 6.0s')).toBeGreaterThan(text.indexOf('╡'))
-    expect(text).toContain('waiting on you 1.0s')
+    expect(text.indexOf('thinking 0:06')).toBeGreaterThan(text.indexOf('╡'))
+    expect(text).toContain('waiting on you 0:01')
     expect(textOf(MISSION.receipt({ durationMs: 9_000, stats: null, notes: [], timeStrip: null }, ctxOf()))).toMatch(/^╞═ 9\.0s ═+╡$/)
   })
 

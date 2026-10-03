@@ -81,7 +81,9 @@ function receiptData(settings: Settings, durationMs: number, stats: Model.TurnSt
   const data: ReceiptData = { durationMs, stats, notes: [], timeStrip: null }
   if (stats?.title) data.title = stats.title
   if (settings.ingredients.footnotes && stats?.notes) data.notes = stats.notes
-  if (settings.ingredients.timeStrip && columns >= TIME_STRIP_MIN_COLUMNS && stats && stats.toolsMs !== undefined) {
+  // One strip, always just above the prompt: the newest turn's, and only while Claude is idle.
+  const isNewest = !model.isWorking && stats !== null && stats.turn === model.lastCompleted?.turn
+  if (settings.ingredients.timeStrip && isNewest && columns >= TIME_STRIP_MIN_COLUMNS && stats && stats.toolsMs !== undefined) {
     const toolsMs = stats.toolsMs
     const waitingMs = stats.waitingMs ?? 0
     // Claude Code's duration leaves out permission waits, so thinking is measured against the turn's own time.

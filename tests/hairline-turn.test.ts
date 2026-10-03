@@ -50,8 +50,8 @@ describe('hairline turn pieces', () => {
     }, ctxOf()))
     expect(text.indexOf('¹')).toBeLessThan(text.indexOf('Turn 2'))
     expect(text).toContain('Read a.ts · 0.1s')
-    expect(text).toContain('thinking 6.0s')
-    expect(text).toContain('waiting on you 1.0s')
+    expect(text).toContain('thinking 0:06')
+    expect(text).toContain('waiting on you 0:01')
   })
 
   test('-inator mode changes the live word and the receipt', async () => {

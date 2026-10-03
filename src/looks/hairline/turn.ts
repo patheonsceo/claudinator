@@ -2,7 +2,7 @@ import type { RenderElement } from 'claude-code'
 
 import { formatDuration, plural, printable } from '../../engine/format'
 import { tone } from '../../engine/palette'
-import { inatorQuip, notesBlock, timeStripRow } from '../common'
+import { inatorQuip, notesBlock, stripColors, timeStripRow } from '../common'
 import type { Ctx, HeadlineData, ReceiptData } from '../look'
 import { C, delta, grow, txt } from './style'
 
@@ -31,7 +31,7 @@ export function receipt(data: ReceiptData, ctx: Ctx): RenderElement {
   const { Box } = ctx.els
   const line = receiptLine(data, ctx)
   const notes = notesBlock(ctx, data.notes)
-  const strip = data.timeStrip ? timeStripRow(ctx, data.timeStrip) : null
+  const strip = data.timeStrip ? timeStripRow(ctx, data.timeStrip, stripColors('hairline', ctx.isDark)) : null
   if (!notes && !strip) return line
   return Box({ flexDirection: 'column', children: [notes, line, strip].filter((x): x is RenderElement => x !== null) })
 }

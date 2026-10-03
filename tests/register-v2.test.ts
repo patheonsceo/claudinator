@@ -56,8 +56,8 @@ describe('register: the full suite', () => {
     await clock.advance(3_000)
     await $.turn.complete({ turnId: 't1', durationMs: 5_000, answer: 'ok', isAborted: false, reason: 'answer' })
     const text = textOf(await $.ui.render(turnDurationInput(5_000)))
-    expect(text).toContain('thinking 3.0s')
-    expect(text).toContain('tools 2.0s')
+    expect(text).toContain('thinking 0:03')
+    expect(text).toContain('tools 0:02')
   })
 
   test('/chapters opens the navigator, and a chapter jumps to its prompt', async ($, on) => {

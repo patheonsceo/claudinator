@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { inatorQuip, inatorWord, noteText, superscript, timeStripSegments } from '../src/looks/common'
+import { inatorQuip, inatorWord, noteText, stripColors, superscript, timeStripRow, timeStripSegments } from '../src/looks/common'
+import { ctxOf, textOf } from './fixtures'
 
 describe('common look helpers', () => {
   test('superscript writes any number with superscript digits', async () => {
@@ -23,5 +24,28 @@ describe('common look helpers', () => {
   test('-inator mode has a vocabulary', async () => {
     expect(inatorWord(0)).not.toBe(inatorWord(30))
     expect(inatorQuip({ turn: 3, files: ['a'], add: 1, del: 0 })).toMatch(/inator/)
+  })
+})
+
+describe('the time strip, as the lookbook draws it', () => {
+  const data = { thinkingMs: 78_000, toolsMs: 42_000, waitingMs: 14_000 }
+
+  test('gridded cells, a gap between parts, and the legend on its own row in minutes and seconds', async () => {
+    const tree = timeStripRow(ctxOf({ columns: 120 }), data, stripColors('hairline', true)) as { children: unknown[] }
+    const [bar, legend] = tree.children
+    expect(textOf(bar)).toMatch(/^ *■+ ■+ ■+$/)
+    expect(textOf(legend)).toContain('thinking 1:18')
+    expect(textOf(legend)).toContain('tools 0:42')
+    expect(textOf(legend)).toContain('waiting on you 0:14')
+  })
+
+  test('every look has three distinct colors, in dark and in light', async () => {
+    for (const look of ['hairline', 'broadsheet', 'mission', 'prism', 'sumi', 'blueprint'] as const) {
+      for (const isDark of [true, false]) {
+        const c = stripColors(look, isDark)
+        expect(new Set([c.thinking, c.tools, c.waiting]).size, `${look} ${isDark}`).toBe(3)
+      }
+      expect(stripColors(look, true).thinking).not.toBe(stripColors(look, false).thinking)
+    }
   })
 })
