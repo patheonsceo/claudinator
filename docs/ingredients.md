@@ -7,7 +7,7 @@ Ingredients work in any look. Toggle them in the `/claudinator` picker, or set d
 | Recency fade | `r` | on | Rows from the previous turn dim; older rows dim further. Your eye lands on the newest line. Needs fullscreen mode. |
 | Mini diffs | `d` | on | Each edit shows up to three changed lines under its row. |
 | File colors | `f` | off | Each file keeps one color everywhere it appears. |
-| Quiet | `q` | off | Hides reads, searches and passing commands. Claude's prose, edits and failures stay. |
+| Quiet | `q` | off | Hides reads, searches, commands and web fetches, leaving a "· N steps hidden" line. Claude's prose, edits, failures, agents and other tools stay. |
 
 ### Mini diffs
 
@@ -27,10 +27,14 @@ Ingredients work in any look. Toggle them in the `/claudinator` picker, or set d
 
 ## Per-project settings
 
-A project can set a look and ingredients for everyone who works in it with `.claude/claudinator.json`:
+A project can set default looks and ingredients for everyone who works in it with `.claude/claudinator.json`:
 
 ```json
 { "look": "hairline", "ingredients": { "fileColors": true } }
 ```
 
-Choices a project sets show as *(project)* in the picker. A project cannot turn on Quiet: hiding tool calls is always your own choice.
+Anything you choose yourself, in the picker or with `/look`, takes precedence over the project's defaults, so `/look off` always works. A project cannot turn on Quiet: hiding tool calls is always your own choice.
+
+Settings apply in this order, later winning: built-in defaults, your `/config` options, the project's file, then your own choices.
+
+Quiet hides reads, searches, commands and web fetches. Agents and other tools, such as MCP tools that send messages, always stay visible, and every hidden row leaves a "· N steps hidden" line.

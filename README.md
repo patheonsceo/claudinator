@@ -20,7 +20,7 @@ Requires Claude Code v2.1.287 or later. Fullscreen mode (`CLAUDE_CODE_NO_FLICKER
 - **Watch a turn in Hairline.** Ask Claude to fix something and run the tests. Each step is one aligned row, edits show their changed lines, and the turn ends with a receipt: `── ◆ Turn 3 · 48s · 2 files · +12 −4 · 18% ctx ──`.
 - **Switch looks live.** Type `/claudinator`, press `2` to see stock Claude Code, then `1` to bring Hairline back.
 - **Quiet a long session.** In the picker, press `q`. Reads and searches disappear, and only Claude's prose and the changes stay.
-- **Set a look for a project.** Commit `.claude/claudinator.json` with `{ "look": "hairline" }` so everyone on the repo gets it.
+- **Set a default look for a project.** Commit `.claude/claudinator.json` with `{ "look": "hairline" }` so everyone on the repo starts with it. Anyone can still pick their own.
 
 ## Looks and ingredients
 
@@ -43,7 +43,7 @@ See [docs/ingredients.md](docs/ingredients.md) for a GIF of each. Six more looks
 
 ## Privacy
 
-Claudinator runs entirely on your machine. It makes no network requests, calls no model, runs no programs, and never reads Claude's history files. It keeps only your look and ingredient choice, and a project can never use it to hide tool calls from you. The full list of what it reads is in [docs/privacy.md](docs/privacy.md).
+Claudinator runs entirely on your machine. It makes no network requests, calls no model, runs no programs, and never reads Claude's history files. It reads the tool calls it draws, keeps only your look and ingredient choice on disk, and a project can never use it to hide tool calls from you. The full list of what it reads is in [docs/privacy.md](docs/privacy.md).
 
 ## Not affiliated with Anthropic
 
