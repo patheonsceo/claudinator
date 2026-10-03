@@ -1,0 +1,23 @@
+{
+  "name": "Claudinator Mission Control Light",
+  "background": "#f3f4f1",
+  "foreground": "#191b19",
+  "cursorColor": "#b26a00",
+  "selectionBackground": "#d3e5e0",
+  "black": "#2a2d2a",
+  "red": "#c23a28",
+  "green": "#3a7c1c",
+  "yellow": "#b26a00",
+  "blue": "#2c5f9e",
+  "purple": "#9a3f7a",
+  "cyan": "#11796a",
+  "white": "#d8dbd4",
+  "brightBlack": "#636961",
+  "brightRed": "#d9533f",
+  "brightGreen": "#4f9a2c",
+  "brightYellow": "#cc8410",
+  "brightBlue": "#4277b8",
+  "brightPurple": "#b5579a",
+  "brightCyan": "#1f988a",
+  "brightWhite": "#ffffff"
+}

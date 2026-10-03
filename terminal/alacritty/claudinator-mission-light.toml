@@ -1,0 +1,32 @@
+# Claudinator Mission Control Light
+[colors.primary]
+background = "#f3f4f1"
+foreground = "#191b19"
+
+[colors.cursor]
+cursor = "#b26a00"
+text = "#f3f4f1"
+
+[colors.selection]
+background = "#d3e5e0"
+text = "#191b19"
+
+[colors.normal]
+black = "#2a2d2a"
+red = "#c23a28"
+green = "#3a7c1c"
+yellow = "#b26a00"
+blue = "#2c5f9e"
+magenta = "#9a3f7a"
+cyan = "#11796a"
+white = "#d8dbd4"
+
+[colors.bright]
+black = "#636961"
+red = "#d9533f"
+green = "#4f9a2c"
+yellow = "#cc8410"
+blue = "#4277b8"
+magenta = "#b5579a"
+cyan = "#1f988a"
+white = "#ffffff"

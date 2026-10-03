@@ -1,0 +1,32 @@
+# Claudinator Mission Control Dark
+[colors.primary]
+background = "#0c0e0d"
+foreground = "#d8dcd5"
+
+[colors.cursor]
+cursor = "#ffb347"
+text = "#0c0e0d"
+
+[colors.selection]
+background = "#263029"
+text = "#d8dcd5"
+
+[colors.normal]
+black = "#161a18"
+red = "#ff6b57"
+green = "#93d46b"
+yellow = "#ffb347"
+blue = "#6fa8dc"
+magenta = "#d48fbf"
+cyan = "#6fd6c3"
+white = "#c3c8bf"
+
+[colors.bright]
+black = "#4a524b"
+red = "#ff8d7d"
+green = "#b0e38f"
+yellow = "#ffc978"
+blue = "#93c0e8"
+magenta = "#e3abd1"
+cyan = "#96e3d5"
+white = "#f2f4ef"
