@@ -1,0 +1,22 @@
+# Claudinator Prism Dark
+palette = 0=#1a1726
+palette = 1=#ff7088
+palette = 2=#6ee7b7
+palette = 3=#ffb86b
+palette = 4=#8f86ff
+palette = 5=#ff6fa8
+palette = 6=#6fd6e8
+palette = 7=#cfcde0
+palette = 8=#4a4660
+palette = 9=#ff94a6
+palette = 10=#9af0cc
+palette = 11=#ffcc94
+palette = 12=#aaa2ff
+palette = 13=#ff94c0
+palette = 14=#9ae4f0
+palette = 15=#f6f5fc
+background = #0f0d16
+foreground = #ecebf5
+cursor-color = #7c6cff
+selection-background = #2c2645
+selection-foreground = #ecebf5

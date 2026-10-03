@@ -1,0 +1,22 @@
+# Claudinator Prism Light
+palette = 0=#2a2738
+palette = 1=#d0304d
+palette = 2=#108a5c
+palette = 3=#b86e14
+palette = 4=#5b4bff
+palette = 5=#e0457f
+palette = 6=#0f7f95
+palette = 7=#dcd8ea
+palette = 8=#6c6982
+palette = 9=#e2566f
+palette = 10=#1aa673
+palette = 11=#e08a2e
+palette = 12=#7a6dff
+palette = 13=#ec6a9a
+palette = 14=#1a9bb3
+palette = 15=#ffffff
+background = #fbfaff
+foreground = #1d1b29
+cursor-color = #5b4bff
+selection-background = #e2ddfb
+selection-foreground = #1d1b29

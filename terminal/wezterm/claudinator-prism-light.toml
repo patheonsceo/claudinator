@@ -1,0 +1,13 @@
+[colors]
+foreground = "#1d1b29"
+background = "#fbfaff"
+cursor_bg = "#5b4bff"
+cursor_border = "#5b4bff"
+cursor_fg = "#fbfaff"
+selection_bg = "#e2ddfb"
+selection_fg = "#1d1b29"
+ansi = ["#2a2738", "#d0304d", "#108a5c", "#b86e14", "#5b4bff", "#e0457f", "#0f7f95", "#dcd8ea"]
+brights = ["#6c6982", "#e2566f", "#1aa673", "#e08a2e", "#7a6dff", "#ec6a9a", "#1a9bb3", "#ffffff"]
+
+[metadata]
+name = "Claudinator Prism Light"

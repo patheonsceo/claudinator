@@ -1,0 +1,13 @@
+[colors]
+foreground = "#ecebf5"
+background = "#0f0d16"
+cursor_bg = "#7c6cff"
+cursor_border = "#7c6cff"
+cursor_fg = "#0f0d16"
+selection_bg = "#2c2645"
+selection_fg = "#ecebf5"
+ansi = ["#1a1726", "#ff7088", "#6ee7b7", "#ffb86b", "#8f86ff", "#ff6fa8", "#6fd6e8", "#cfcde0"]
+brights = ["#4a4660", "#ff94a6", "#9af0cc", "#ffcc94", "#aaa2ff", "#ff94c0", "#9ae4f0", "#f6f5fc"]
+
+[metadata]
+name = "Claudinator Prism Dark"

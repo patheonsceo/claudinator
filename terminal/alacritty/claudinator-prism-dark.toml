@@ -1,0 +1,32 @@
+# Claudinator Prism Dark
+[colors.primary]
+background = "#0f0d16"
+foreground = "#ecebf5"
+
+[colors.cursor]
+cursor = "#7c6cff"
+text = "#0f0d16"
+
+[colors.selection]
+background = "#2c2645"
+text = "#ecebf5"
+
+[colors.normal]
+black = "#1a1726"
+red = "#ff7088"
+green = "#6ee7b7"
+yellow = "#ffb86b"
+blue = "#8f86ff"
+magenta = "#ff6fa8"
+cyan = "#6fd6e8"
+white = "#cfcde0"
+
+[colors.bright]
+black = "#4a4660"
+red = "#ff94a6"
+green = "#9af0cc"
+yellow = "#ffcc94"
+blue = "#aaa2ff"
+magenta = "#ff94c0"
+cyan = "#9ae4f0"
+white = "#f6f5fc"

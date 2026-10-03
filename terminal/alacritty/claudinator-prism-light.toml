@@ -1,0 +1,32 @@
+# Claudinator Prism Light
+[colors.primary]
+background = "#fbfaff"
+foreground = "#1d1b29"
+
+[colors.cursor]
+cursor = "#5b4bff"
+text = "#fbfaff"
+
+[colors.selection]
+background = "#e2ddfb"
+text = "#1d1b29"
+
+[colors.normal]
+black = "#2a2738"
+red = "#d0304d"
+green = "#108a5c"
+yellow = "#b86e14"
+blue = "#5b4bff"
+magenta = "#e0457f"
+cyan = "#0f7f95"
+white = "#dcd8ea"
+
+[colors.bright]
+black = "#6c6982"
+red = "#e2566f"
+green = "#1aa673"
+yellow = "#e08a2e"
+blue = "#7a6dff"
+magenta = "#ec6a9a"
+cyan = "#1a9bb3"
+white = "#ffffff"
