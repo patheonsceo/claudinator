@@ -20,3 +20,13 @@ export const SHOWCASE_CODES = {
   sumi: 'SU-6P6',
   blueprint: 'BP-6P6',
 }
+
+/** What each look's receipt shows for turn n: the recording waits for it before going on. tests/tape-codes.test.ts checks it. */
+export const RECEIPT = {
+  hairline: n => `Turn ${n}`,
+  broadsheet: () => 'set in',
+  mission: n => `T0${n}`,
+  prism: n => `turn ${n}`,
+  sumi: () => '■ ───',
+  blueprint: n => `DWG T-0${n}`,
+}

@@ -8,19 +8,11 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { DEFAULT_CODES } from './codes.mjs'
+import { DEFAULT_CODES, RECEIPT } from './codes.mjs'
 
 const LOOKS = ['hairline', 'broadsheet', 'mission', 'prism', 'sumi', 'blueprint']
 
 /** Text each look's receipt shows once turn n has finished; recordings wait for it. */
-export const RECEIPT = {
-  hairline: n => `Turn ${n}`,
-  broadsheet: () => 'set in',
-  mission: n => `T0${n}`,
-  prism: n => `turn ${n}`,
-  sumi: () => '━━━',
-  blueprint: n => `DWG T-0${n}`,
-}
 
 const FIX = 'Fix total() in src/cart.js so it counts item.qty, then run node --test.'
 const SECOND = 'Now add a test for an empty cart and run node --test again.'
