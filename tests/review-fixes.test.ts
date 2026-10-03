@@ -10,8 +10,8 @@ import { PRISM } from '../src/looks/prism'
 import { clockCells as hairlineClock } from '../src/looks/hairline/live'
 import { clockCells as prismClock } from '../src/looks/prism/live'
 import { factsOf, isFootnotable } from '../src/engine/tool-facts'
-import { stripColors, timeStripRow, withMarks } from '../src/looks/common'
-import { SESSION, assistantInput, ctxOf, startsSession, textOf, toolGroupInput, toolUseInput, turnDurationInput } from './fixtures'
+import { runStatsLine, stripColors, withMarks } from '../src/looks/common'
+import { SESSION, assistantInput, bandInput, ctxOf, startsSession, textOf, toolGroupInput, toolUseInput, turnDurationInput } from './fixtures'
 
 const read = (file: string) => ({ file_path: file })
 const edit = (file: string) => ({ file_path: file, old_string: 'a', new_string: 'b' })
@@ -256,7 +256,7 @@ describe('thinking time', () => {
 })
 
 describe('narrow terminals and switched-off ingredients', () => {
-  test('the time strip stays off below 100 columns', async ($, on) => {
+  test('the time line stays off below 60 columns', async ($, on) => {
     const { saved, clock } = startsSession(on)
     saved.set('settings', { ingredients: { timeStrip: true } })
     on('turn.start', ($, e) => ({ turnId: e.turnId }))
@@ -265,7 +265,7 @@ describe('narrow terminals and switched-off ingredients', () => {
     await $.turn.start({ turnId: 't1', text: 'x' })
     await clock.advance(3_000)
     await $.turn.complete({ turnId: 't1', durationMs: 3_000, answer: 'ok', isAborted: false, reason: 'answer' })
-    const narrow = { ...turnDurationInput(3_000), viewport: { columns: 80, rows: 40, isFullscreen: true } }
+    const narrow = { ...turnDurationInput(3_000), viewport: { columns: 50, rows: 40, isFullscreen: true } }
     expect(textOf(await $.ui.render(narrow))).not.toContain('thinking')
   })
 
@@ -286,8 +286,8 @@ describe('narrow terminals and switched-off ingredients', () => {
   })
 })
 
-describe('one time strip, just above the prompt', () => {
-  test('only the newest receipt carries the strip, and only while Claude is idle', async ($, on) => {
+describe('time under every run, progress above the prompt', () => {
+  test('every receipt keeps its own time line, even after later turns and while Claude works', async ($, on) => {
     const { saved, clock } = startsSession(on)
     saved.set('settings', { ingredients: { timeStrip: true } })
     on('turn.start', ($, e) => ({ turnId: e.turnId }))
@@ -300,10 +300,27 @@ describe('one time strip, just above the prompt', () => {
       await $.turn.complete({ turnId: turn, durationMs: 3_000, answer: 'ok', isAborted: false, reason: 'answer' })
       await $.ui.render(receiptOf(id))
     }
-    expect(textOf(await $.ui.render(receiptOf('r1')))).not.toContain('thinking')
-    expect(textOf(await $.ui.render(receiptOf('r2')))).toContain('thinking')
     await $.turn.start({ turnId: 't3', text: 'x' })
-    expect(textOf(await $.ui.render(receiptOf('r2')))).not.toContain('thinking')
+    expect(textOf(await $.ui.render(receiptOf('r1')))).toContain('thinking 0:03')
+    expect(textOf(await $.ui.render(receiptOf('r2')))).toContain('thinking 0:03')
+  })
+
+  test('while Claude works through a todo list, the band above the prompt shows how far it is', async ($, on) => {
+    const { saved } = startsSession(on)
+    saved.set('settings', { ingredients: { timeStrip: true } })
+    on('tool.call', () => ({ result: 'ok' }))
+    on('turn.start', ($, e) => ({ turnId: e.turnId }))
+    await $.session.start(SESSION)
+    await $.turn.start({ turnId: 't1', text: 'x' })
+    expect(textOf(await $.ui.render(bandInput()))).not.toContain(' of ')
+    await $.tool.call({ tool: 'TodoWrite', todos: [
+      { content: 'Read the cart', activeForm: 'Reading the cart', status: 'completed' },
+      { content: 'Fix total', activeForm: 'Fixing total', status: 'in_progress' },
+      { content: 'Run tests', activeForm: 'Running tests', status: 'pending' },
+    ] } as never)
+    const band = textOf(await $.ui.render(bandInput()))
+    expect(band).toContain('1 of 3')
+    expect(band).toContain('Fixing total')
   })
 })
 
@@ -361,9 +378,38 @@ describe('second-round screenshot fixes', () => {
   })
 
   test('short times in the strip legend read in seconds, longer ones in minutes', async () => {
-    const tree = timeStripRow(ctxOf({ columns: 120 }), { thinkingMs: 78_000, toolsMs: 600, waitingMs: 0 }, stripColors('hairline', true)) as { children: unknown[] }
-    const legend = textOf(tree.children[1])
+    const legend = textOf(runStatsLine(ctxOf({ columns: 120 }), { thinkingMs: 78_000, toolsMs: 600, waitingMs: 0 }, stripColors('hairline', true)))
     expect(legend).toContain('thinking 1:18')
     expect(legend).toContain('tools 0.6s')
+  })
+})
+
+describe('live task progress from Claude’s todo list', () => {
+  const todos = (statuses: string[]) => ({
+    todos: statuses.map((status, i) => ({ content: `Task ${i + 1}`, activeForm: `Doing task ${i + 1}`, status })),
+  })
+
+  test('progress counts finished tasks and names the active one, only for a list written this turn', async () => {
+    const m = Model.createModel()
+    Model.startTurn(m, 0)
+    expect(Model.progressOf(m)).toBeNull()
+    Model.toolStarted(m, 't1', 'TodoWrite', todos(['completed', 'in_progress', 'pending']), 100)
+    expect(Model.progressOf(m)).toEqual({ done: 1, total: 3, active: 'Doing task 2' })
+    Model.toolStarted(m, 't2', 'TodoWrite', todos(['completed', 'completed', 'in_progress']), 200)
+    expect(Model.progressOf(m)).toEqual({ done: 2, total: 3, active: 'Doing task 3' })
+    Model.completeTurn(m, 300)
+    expect(m.lastCompleted?.tasks).toEqual({ done: 2, total: 3 })
+    expect(Model.progressOf(m), 'nothing live once the turn ends').toBeNull()
+    Model.startTurn(m, 400)
+    expect(Model.progressOf(m), 'last turn’s list is not this turn’s progress').toBeNull()
+  })
+
+  test('a subagent’s list and a malformed list never count', async () => {
+    const m = Model.createModel()
+    Model.startTurn(m, 0)
+    Model.toolStarted(m, 's', 'TodoWrite', todos(['in_progress']), 10, false, true)
+    expect(Model.progressOf(m)).toBeNull()
+    Model.toolStarted(m, 'x', 'TodoWrite', { todos: 'nonsense' }, 20)
+    expect(Model.progressOf(m)).toBeNull()
   })
 })

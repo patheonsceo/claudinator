@@ -1,7 +1,7 @@
 import type { RenderElement } from 'claude-code'
 
 import { clockLabel, printable } from '../../engine/format'
-import { notesBlock, stripColors, timeStripRow } from '../common'
+import { notesBlock, runStatsLine, stripColors } from '../common'
 import type { Ctx, HeadlineData, ReceiptData } from '../look'
 import { APART, C, GAP, INDENT, apart, delta, fitWords, grow, ink, line, spaced, spacedWords, txt, wash } from './style'
 
@@ -27,7 +27,7 @@ export function headline(h: HeadlineData, ctx: Ctx): RenderElement {
 export function receipt(data: ReceiptData, ctx: Ctx): RenderElement {
   const notes = notesBlock(ctx, data.notes, { indent: INDENT, accent: C.dim, italic: true })
   const strip =
-    data.timeStrip && ctx.columns >= STRIP_COLUMNS ? timeStripRow(ctx, data.timeStrip, { ...stripColors('sumi', ctx.isDark), indent: INDENT }) : null
+    data.timeStrip && ctx.columns >= STRIP_COLUMNS ? runStatsLine(ctx, data.timeStrip, { ...stripColors('sumi', ctx.isDark), indent: INDENT }) : null
   const main = receiptLine(data, ctx)
   if (!notes && !strip) return main
   return ctx.els.Box({ flexDirection: 'column', children: [notes, main, strip].filter((x): x is RenderElement => x !== null) })

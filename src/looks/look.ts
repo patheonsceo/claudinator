@@ -47,7 +47,7 @@ export type HeadlineData = { turn: number; title: string }
 export type FootnoteData = { n: number; tool: string; input: unknown; durationMs?: number }
 
 /** Where a turn's time went, when Time strip is on. */
-export type TimeStripData = { thinkingMs: number; toolsMs: number; waitingMs: number }
+export type TimeStripData = { thinkingMs: number; toolsMs: number; waitingMs: number; tasks?: { done: number; total: number } }
 
 export type ReceiptData = {
   durationMs: number
