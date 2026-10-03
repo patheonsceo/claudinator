@@ -5,12 +5,7 @@ import { fileColor } from '../../engine/palette'
 import { bashSummary, changeOf, errorSummary, factsOf, isChangeTool, pickDiffLines } from '../../engine/tool-facts'
 import type { DiffLine, ToolFacts } from '../../engine/tool-facts'
 import type { Ctx, ResultRow, ToolRow } from '../look'
-import { C, DIFF_INDENT, NARROW_COLUMNS, ink, line, shrink, tail, txt, wash } from './style'
-
-/** The counts an edit carries, muted: `+3 −1`. */
-function counts(add: number, del: number): string {
-  return [add > 0 ? `+${add}` : '', del > 0 ? `−${del}` : ''].filter(s => s !== '').join(' ')
-}
+import { C, DETAIL_INDENT, DIFF_INDENT, NARROW_COLUMNS, apart, delta, line, shrink, tail, txt, wash } from './style'
 
 function baseName(ctx: Ctx, path: string): string {
   return splitPath(path, ctx.cwd).base
@@ -22,14 +17,15 @@ function whatOf(ctx: Ctx, facts: ToolFacts): string {
   return facts.isPath ? baseName(ctx, facts.target) : facts.target
 }
 
+/** ` + const held = …` on a faint wash, a column of padding each side; the sign in its ink, the code in plain ink. */
 function diffLine(ctx: Ctx, l: DiffLine): RenderElement {
+  const added = l.kind === '+'
   return ctx.els.Box({
     paddingLeft: DIFF_INDENT,
     children: ctx.els.Text({
-      color: ink(ctx, C.dim),
-      ...(ctx.fade > 0 ? {} : { backgroundColor: l.kind === '+' ? 'diffAdded' : 'diffRemoved' }),
+      ...(ctx.fade > 0 ? {} : { backgroundColor: added ? 'diffAdded' : 'diffRemoved' }),
       wrap: 'truncate-end',
-      children: `${l.kind === '+' ? '+' : '−'} ${printable(l.text.trim(), 400)}`,
+      children: [' ', txt(ctx, added ? C.add : C.err, added ? '+' : '-'), txt(ctx, C.text, ` ${printable(l.text.trim(), 400)} `)],
     }),
   })
 }
@@ -52,14 +48,15 @@ function failedRow(row: ToolRow, ctx: Ctx, facts: ToolFacts): RenderElement {
 }
 
 /**
- * Reads, searches and commands leave a dot and a faint word. Only changes get
- * a mark: the indigo seal, the file name and its counts.
+ * Reads, searches and commands leave a dot and a faint word (`·   read`). Only
+ * changes get a mark: `■ session.ts   +38 −9`, the indigo seal, the file name
+ * and its counts in their inks.
  */
 export function toolRow(row: ToolRow, ctx: Ctx): RenderElement {
   const facts = factsOf(row.tool, row.input)
   if (row.isErrored || row.isInterrupted) return failedRow(row, ctx, facts)
   if (!isChangeTool(row.tool)) {
-    const parts: RenderElement[] = [txt(ctx, C.dim, '·'), txt(ctx, wash(ctx), facts.verb.toLowerCase())]
+    const parts: RenderElement[] = [txt(ctx, C.dim, '·'), apart(ctx, txt(ctx, wash(ctx), facts.verb.toLowerCase()))]
     // A word alone says nothing for agents and other tools, so their target stays, faint.
     if ((facts.glyph === 'agent' || facts.glyph === 'other') && facts.target !== '') parts.push(shrink(ctx, txt(ctx, wash(ctx), facts.target, { wrap: 'truncate-end' })))
     return line(ctx, [...parts, ...tail(ctx, row)])
@@ -71,8 +68,8 @@ export function toolRow(row: ToolRow, ctx: Ctx): RenderElement {
     const { dir, base } = splitPath(facts.target, ctx.cwd)
     parts.push(shrink(ctx, txt(ctx, ctx.settings.ingredients.fileColors ? fileColor(dir + base) : C.text, base, { wrap: 'truncate-start' })))
   }
-  const delta = counts(change.add, change.del)
-  if (delta !== '') parts.push(ctx.els.Box({ flexShrink: 0, children: txt(ctx, C.dim, delta) }))
+  const counts = delta(ctx, change.add, change.del)
+  if (counts.length > 0) parts.push(apart(ctx, ctx.els.Text({ children: counts })))
   const head = line(ctx, [...parts, ...tail(ctx, row)])
   if (!ctx.settings.ingredients.miniDiffs) return head
   const lines = pickDiffLines(change.lines, 3)
@@ -80,7 +77,7 @@ export function toolRow(row: ToolRow, ctx: Ctx): RenderElement {
   return ctx.els.Box({ flexDirection: 'column', children: [head, ...lines.map(l => diffLine(ctx, l))] })
 }
 
-/** A folded run: one dot per call (a cross where one failed), then a faint count. */
+/** A folded run, `· · ·   3 steps`: one dot per call (a seal for a change, a cross where one failed), then a faint count. */
 export function toolGroup(rows: ToolRow[], ctx: Ctx): RenderElement {
   // A group of one says more as its own row: `·  read`, not `·  1 step`.
   const only = rows.length === 1 ? rows[0] : undefined
@@ -95,7 +92,7 @@ export function toolGroup(rows: ToolRow[], ctx: Ctx): RenderElement {
   })
   if (rows.length > max) marks.push(txt(ctx, wash(ctx), ' …'))
   const failed = rows.filter(r => r.isErrored || r.isInterrupted).length
-  const parts: RenderElement[] = [ctx.els.Box({ flexShrink: 0, children: ctx.els.Text({ children: marks }) }), txt(ctx, wash(ctx), plural(rows.length, 'step'))]
+  const parts: RenderElement[] = [ctx.els.Box({ flexShrink: 0, children: ctx.els.Text({ children: marks }) }), apart(ctx, txt(ctx, wash(ctx), plural(rows.length, 'step')))]
   if (failed > 0) parts.push(ctx.els.Box({ flexShrink: 0, children: txt(ctx, C.dim, `· ${failed} failed`) }))
   const isTimed = rows.length > 0 && rows.every(r => r.durationMs !== undefined)
   const running = rows.some(r => r.isRunning)
@@ -104,11 +101,11 @@ export function toolGroup(rows: ToolRow[], ctx: Ctx): RenderElement {
 }
 
 export function quietLine(hidden: number, ctx: Ctx): RenderElement {
-  return line(ctx, [txt(ctx, wash(ctx), '·'), txt(ctx, wash(ctx), plural(hidden, 'step'))])
+  return line(ctx, [txt(ctx, wash(ctx), '·'), apart(ctx, txt(ctx, wash(ctx), plural(hidden, 'step')))])
 }
 
 function resultLine(ctx: Ctx, text: string): RenderElement {
-  return ctx.els.Box({ paddingLeft: DIFF_INDENT, children: txt(ctx, C.dim, text, { wrap: 'truncate-end' }) })
+  return ctx.els.Box({ paddingLeft: DETAIL_INDENT, children: txt(ctx, C.dim, text, { wrap: 'truncate-end' }) })
 }
 
 /** Results fall away; an error and a command's last line stay, under the row's words. */

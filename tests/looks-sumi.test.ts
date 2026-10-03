@@ -4,7 +4,9 @@ import { DEFAULT_SETTINGS } from '../src/engine/settings'
 import type { Settings } from '../src/engine/settings'
 import type { Ctx, LiveMode, ReceiptData, ToolRow } from '../src/looks/look'
 import { SUMI } from '../src/looks/sumi'
-import { ENSO, spaced } from '../src/looks/sumi/style'
+import { encodeCells } from '../src/engine/raster'
+import { ENSO_STROKE, ensoAt } from '../src/looks/sumi/live'
+import { LIVE_INK, spaced } from '../src/looks/sumi/style'
 import { DESKTOP_ELS, ctxOf, textOf } from './fixtures'
 
 type Node = { type: string; props: Record<string, unknown>; children: unknown[] }
@@ -60,30 +62,39 @@ function everything(ctx: Ctx, text = 'cart.js'): unknown[] {
 }
 
 describe('sumi tool rows', () => {
-  test('a read leaves a dot and a faint word, nothing else', async () => {
+  test('a read leaves a dot and a faint word three columns on, nothing else', async () => {
     const tree = SUMI.toolRow(rowOf('Read', { file_path: '/work/src/cart.js' }), ctxOf())
     expect(textOf(tree)).toBe('·read')
-    expect(props(tree, 'paddingLeft')).toContain(3)
+    expect(props(tree, 'paddingLeft')).toEqual([3, 2])
+    expect(props(tree, 'columnGap')).toEqual([1])
   })
 
-  test('an edit carries the indigo seal, the file name and muted counts', async () => {
+  test('an edit is `■ session.ts   +38 −9`: the seal, one space, the name, three spaces, the counts in their inks', async () => {
     const tree = SUMI.toolRow(rowOf('Edit', EDIT), ctxOf({ settings: withIngredients({ miniDiffs: false }) }))
-    const text = textOf(tree)
-    expect(text).toContain('■')
-    expect(text).toContain('cart.js')
-    expect(text).toContain('+1 −1')
-    expect(props(tree, 'color')).toContain('suggestion')
+    expect(textOf(tree)).toBe('■cart.js+1 −1')
+    expect(props(tree, 'columnGap')).toEqual([1])
+    expect(props(tree, 'paddingLeft')).toEqual([3, 2])
+    const colored = nodes(tree).filter(n => n.type === 'Text' && n.props.color !== undefined).map(n => `${String(n.props.color)}:${textOf(n.children)}`)
+    expect(colored).toContain('suggestion:■')
+    expect(colored).toContain('success:+1')
+    expect(colored).toContain('error: −1')
     expect(props(tree, 'backgroundColor'), 'no diff lines when mini diffs are off').toEqual([])
+    const adds = SUMI.toolRow(rowOf('Write', { file_path: '/work/new.ts', content: 'a\nb' }), ctxOf({ settings: withIngredients({ miniDiffs: false }) }))
+    expect(textOf(adds), 'a side with nothing to count stays out').toBe('■new.ts+2')
   })
 
-  test('mini diffs show the changed lines indented six on muted backgrounds', async () => {
+  test('mini diffs sit on a padded wash under the name, the sign in its ink and the code in plain ink', async () => {
     const ctx = ctxOf({ settings: withIngredients({ miniDiffs: true }) })
     const tree = SUMI.toolRow(rowOf('Edit', EDIT), ctx)
     const text = textOf(tree)
-    expect(text).toContain('− return items.reduce((s, i) => s + i.price, 0)')
-    expect(text).toContain('+ return items.reduce((s, i) => s + i.price * i.qty, 0)')
+    expect(text).toContain(' - return items.reduce((s, i) => s + i.price, 0) ')
+    expect(text).toContain(' + return items.reduce((s, i) => s + i.price * i.qty, 0) ')
     expect(props(tree, 'paddingLeft')).toContain(6)
     expect(props(tree, 'backgroundColor')).toEqual(['diffRemoved', 'diffAdded'])
+    const colored = nodes(tree).filter(n => n.type === 'Text' && n.props.color !== undefined).map(n => `${String(n.props.color)}:${textOf(n.children)}`)
+    expect(colored).toContain('error:-')
+    expect(colored).toContain('success:+')
+    expect(colored).toContain('text: return items.reduce((s, i) => s + i.price, 0) ')
   })
 
   test('a failure is a red cross and a dim sentence', async () => {
@@ -92,6 +103,7 @@ describe('sumi tool rows', () => {
     expect(textOf(tree)).toContain('npm test auth')
     expect(textOf(tree)).toContain('· failed')
     expect(props(tree, 'color')).toContain('error')
+    expect(props(tree, 'columnGap'), '`✕ auth tests · failed`, a space apart').toEqual([1, 1])
     const stopped = SUMI.toolRow(rowOf('Edit', EDIT, { isInterrupted: true }), ctxOf())
     expect(textOf(stopped)).toBe('✕cart.js· interrupted')
     expect(textOf(SUMI.toolRow(rowOf('NotebookEdit', { notebook_path: '/work/n.ipynb' }), ctxOf()))).toBe('■n.ipynb')
@@ -136,6 +148,7 @@ describe('sumi groups, quiet and results', () => {
     const rows = [rowOf('Read', { file_path: '/w/a' }), rowOf('Read', { file_path: '/w/b' }), rowOf('Grep', { pattern: 'x' }), rowOf('Bash', { command: 'ls' })]
     const text = textOf(SUMI.toolGroup(rows, ctxOf()))
     expect(text).toBe('· · · ·4 steps')
+    expect(props(SUMI.toolGroup(rows, ctxOf()), 'paddingLeft'), 'three columns between the trace and its count').toEqual([3, 2])
   })
 
   test('a group of one draws as its own row', async () => {
@@ -160,13 +173,17 @@ describe('sumi groups, quiet and results', () => {
   test('the quiet line is a faint dot and a count', async () => {
     expect(textOf(SUMI.quietLine(3, ctxOf()))).toBe('·3 steps')
     expect(textOf(SUMI.quietLine(1, ctxOf()))).toBe('·1 step')
+    expect(props(SUMI.quietLine(3, ctxOf()), 'paddingLeft')).toEqual([3, 2])
   })
 
   test('results collapse, errors stay, unknown tools are left to Claude Code', async () => {
     const ctx = ctxOf()
     expect(SUMI.toolResult({ tool: 'Read', output: 'x', isErrored: false }, ctx)).toEqual(ctx.els.Box({}))
     expect(textOf(SUMI.toolResult({ tool: 'Bash', output: { stdout: 'a\ncart.js\n', stderr: '' }, isErrored: false }, ctx))).toBe('cart.js')
-    expect(textOf(SUMI.toolResult({ tool: 'Bash', output: { stderr: 'boom: no such file' }, isErrored: true }, ctx))).toBe('boom: no such file')
+    const detail = SUMI.toolResult({ tool: 'Bash', output: { stderr: 'boom: no such file' }, isErrored: true }, ctx)
+    expect(textOf(detail)).toBe('boom: no such file')
+    expect(props(detail, 'paddingLeft'), 'the detail hangs under the words, in line with the diff code').toEqual([7])
+    expect(props(detail, 'color')).toEqual(['inactive'])
     expect(SUMI.toolResult({ tool: 'Edit', output: {}, isErrored: false }, ctxOf({ settings: withIngredients({ miniDiffs: false }) }))).toBeNull()
     expect(SUMI.toolResult({ tool: 'Edit', output: {}, isErrored: false }, ctxOf({ settings: withIngredients({ miniDiffs: true }) }))).toEqual(ctx.els.Box({}))
     expect(SUMI.toolResult({ tool: 'mcp__x__y', output: {}, isErrored: false }, ctx)).toBeNull()
@@ -200,10 +217,14 @@ describe('sumi turn pieces', () => {
     expect(spaced('fix (it), now')).toBe('f i x   (i t),   n o w')
   })
 
-  test('the receipt is a seal, a short rule, the clock and quiet counts', async () => {
+  test('the receipt is `■ ─── 2:14   +103 −10   41%`', async () => {
     const tree = SUMI.receipt(FULL_RECEIPT, ctxOf())
-    expect(textOf(tree)).toBe('■━━━2:14+103 −1041%')
-    expect(props(tree, 'paddingLeft')).toContain(3)
+    expect(textOf(tree)).toBe('■───2:14+103 −1041%')
+    expect(props(tree, 'paddingLeft')).toEqual([3, 2, 2])
+    const colored = nodes(tree).filter(n => n.type === 'Text' && n.props.color !== undefined).map(n => `${String(n.props.color)}:${textOf(n.children)}`)
+    expect(colored).toEqual(['suggestion:■', '#4c4a46:───', 'inactive:2:14', 'success:+103', 'error: −10', 'inactive:41%'])
+    const stats = FULL_RECEIPT.stats ?? { turn: 1, files: [], add: 0, del: 0 }
+    expect(textOf(SUMI.receipt({ ...FULL_RECEIPT, stats: { ...stats, add: 4, del: 0 } }, ctxOf())), 'no −0').toBe('■───2:14+441%')
   })
 
   test('the receipt carries notes above, the time strip below, and works without stats', async () => {
@@ -214,7 +235,7 @@ describe('sumi turn pieces', () => {
     const text = textOf(tree)
     expect(text.indexOf('Read a.ts · 0.1s')).toBeLessThan(text.indexOf('0:09'))
     expect(text.indexOf('0:09')).toBeLessThan(text.indexOf('thinking 0:06'))
-    expect(text).toContain('━')
+    expect(text).toContain('───')
     expect(text).not.toContain('+')
     expect(props(tree, 'italic')).toContain(true)
   })
@@ -229,7 +250,9 @@ describe('sumi turn pieces', () => {
     const settings = withIngredients({ inator: true })
     expect(textOf(SUMI.live({ mode: 'thinking', detail: '', elapsedMs: 0, inator: true }, 0, ctxOf({ surface: 'desktop', els: DESKTOP_ELS, settings })))).toContain('s c h e m i n g')
     expect(textOf(SUMI.live({ mode: 'thinking', detail: '', elapsedMs: 0 }, 0, ctxOf({ settings })))).toContain('s c h e m i n g')
-    expect(textOf(SUMI.receipt(FULL_RECEIPT, ctxOf({ settings })))).toContain('· d e f e a t e d')
+    const defeated = textOf(SUMI.receipt(FULL_RECEIPT, ctxOf({ settings })))
+    expect(defeated).toContain('d e f e a t e d')
+    expect(defeated, 'no dot: the word stands alone').not.toContain('·')
     expect(textOf(SUMI.receipt(FULL_RECEIPT, ctxOf()))).not.toContain('d e f e a t e d')
   })
 
@@ -240,26 +263,58 @@ describe('sumi turn pieces', () => {
 })
 
 describe('sumi live line', () => {
-  test('the terminal line draws an ensō raster, a spaced word and a clock raster', async () => {
-    const tree = SUMI.live({ mode: 'thinking', detail: '', elapsedMs: 42_000 }, 3, ctxOf())
+  const thinking = { mode: 'thinking' as const, detail: '', elapsedMs: 42_000 }
+
+  test('the terminal line is `○ t h i n k i n g`, an ensō raster a space from the word, the clock raster at the right', async () => {
+    const tree = SUMI.live(thinking, 3, ctxOf())
     const rasters = nodes(tree).filter(n => n.type === 'Raster')
     expect(rasters.map(r => r.props.key)).toEqual(['cz-enso', 'cz-clock'])
     expect(rasters[0]?.props.columns).toBe(1)
     expect(textOf(tree)).toContain('t h i n k i n g')
+    expect(props(tree, 'columnGap')).toEqual([1])
+    expect(props(tree, 'paddingLeft')).toContain(3)
   })
 
-  test('running names the step faintly beside a spaced word', async () => {
-    const tree = SUMI.live({ mode: 'running', detail: 'Read src/a.ts', elapsedMs: 3_000 }, 0, ctxOf())
-    expect(textOf(tree)).toContain('r u n n i n g')
-    expect(textOf(tree)).toContain('Read src/a.ts')
+  test('the ensō draws itself: a touch of the brush, a quarter, a half, the closed circle, held, then the ink dries away', async () => {
+    const glyphs = ENSO_STROKE.map(s => s.char)
+    const first = (c: string): number => glyphs.indexOf(c)
+    expect(first('·')).toBe(0)
+    expect(first('·')).toBeLessThan(first('◜'))
+    expect(first('◜')).toBeLessThan(first('◠'))
+    expect(first('◠')).toBeLessThan(first('○'))
+    expect(first('○')).toBeLessThan(first('◯'))
+    expect(glyphs[glyphs.length - 1]).toBe('◌')
+    const held = ENSO_STROKE.filter(s => s.char === '◯' && s.ink === 'seal').length
+    expect(held, 'the closed circle holds for about a second').toBeGreaterThanOrEqual(8)
+    expect([...new Set(ENSO_STROKE.map(s => s.ink))].sort()).toEqual(['mid', 'seal', 'wash'])
+    for (const g of glyphs) expect((g.codePointAt(0) ?? 0x10000) < 0x10000 && [...g].length === 1, g).toBe(true)
   })
 
-  test('the ensō turns slowly through its six phases', async () => {
-    expect(ENSO).toEqual(['◌', '○', '◯', '◯', '○', '◌'])
-    const cell = (frame: number): string => SUMI.liveFrames({ mode: 'thinking', detail: '', elapsedMs: 0 }, frame)[0]?.cells ?? ''
-    expect(cell(0)).toBe(cell(4))
-    expect(cell(4)).not.toBe(cell(5))
-    expect(cell(0)).toBe(cell(30))
+  test('the stroke runs one step per tick and loops', async () => {
+    const cell = (frame: number): string => SUMI.liveFrames(thinking, frame)[0]?.cells ?? ''
+    expect(cell(0)).toBe(encodeCells([{ char: '·', fg: LIVE_INK.seal }]))
+    expect(cell(0)).toBe(cell(ENSO_STROKE.length))
+    expect(ensoAt(ENSO_STROKE.length + 3)).toEqual(ensoAt(3))
+    expect(ensoAt(-4)).toEqual(ensoAt(0))
+    const distinct = new Set(Array.from({ length: ENSO_STROKE.length }, (_, f) => cell(f)))
+    expect(distinct.size).toBeGreaterThanOrEqual(7)
+  })
+
+  test('running draws the ensō too, beside the activity set wide and the target faint', async () => {
+    const tree = SUMI.live({ mode: 'running', activity: 'Reading', detail: 'src/a.ts', elapsedMs: 3_000 }, 0, ctxOf())
+    const text = textOf(tree)
+    expect(text).toContain('r e a d i n g')
+    expect(text).toContain('src/a.ts')
+    expect(text, 'the verb is said once').not.toContain('r u n n i n g')
+    expect(nodes(tree).filter(n => n.type === 'Raster').map(r => r.props.key)).toEqual(['cz-enso', 'cz-clock'])
+    expect(SUMI.liveFrames({ mode: 'running', detail: '', elapsedMs: 0 }, 5)[0]?.cells).toBe(SUMI.liveFrames(thinking, 5)[0]?.cells)
+    const quiet = nodes(tree).filter(n => n.type === 'Text' && textOf(n.children) === 'src/a.ts')
+    expect(quiet.map(n => n.props.color)).toEqual(['#4c4a46'])
+  })
+
+  test('without an activity a running step says running; writing says writing', async () => {
+    expect(textOf(SUMI.live({ mode: 'running', detail: 'ls', elapsedMs: 0 }, 0, ctxOf()))).toContain('r u n n i n g')
+    expect(textOf(SUMI.live({ mode: 'writing', detail: '', elapsedMs: 0 }, 0, ctxOf()))).toContain('w r i t i n g')
   })
 
   test('every live raster keeps its columns across 30 frames in every mode', async () => {
@@ -267,18 +322,20 @@ describe('sumi live line', () => {
       for (const inator of [false, true]) {
         const first = SUMI.liveFrames({ mode, detail: '', elapsedMs: 0, inator }, 0).map(f => `${f.key}:${f.columns}`)
         for (let frame = 1; frame < 30; frame++) {
-          const now = SUMI.liveFrames({ mode, detail: 'x'.repeat(frame), elapsedMs: frame * 61_000, inator }, frame).map(f => `${f.key}:${f.columns}`)
+          const now = SUMI.liveFrames({ mode, detail: 'x'.repeat(frame), activity: frame % 2 ? 'Searching' : 'Reading', elapsedMs: frame * 61_000, inator }, frame).map(f => `${f.key}:${f.columns}`)
           expect(now, `${mode} frame ${frame}`).toEqual(first)
         }
       }
     }
   })
 
-  test('the desktop line is plain text', async () => {
-    const tree = SUMI.live({ mode: 'thinking', detail: '', elapsedMs: 1_000 }, 0, ctxOf({ surface: 'desktop' }))
+  test('the desktop line is plain, static text: `○ t h i n k i n g` and the clock', async () => {
+    const ctx = ctxOf({ surface: 'desktop', els: DESKTOP_ELS })
+    const tree = SUMI.live({ mode: 'thinking', detail: '', elapsedMs: 1_000 }, 0, ctx)
     expect(JSON.stringify(tree)).not.toContain('Raster')
-    expect(textOf(tree)).toContain('t h i n k i n g')
-    expect(textOf(tree)).toContain('0:01')
+    expect(textOf(tree)).toBe('○t h i n k i n g0:01')
+    expect(JSON.stringify(SUMI.live({ mode: 'thinking', detail: '', elapsedMs: 1_000 }, 13, ctx))).toBe(JSON.stringify(tree))
+    expect(textOf(SUMI.live({ mode: 'running', activity: 'Editing', detail: 'cart.js', elapsedMs: 1_000 }, 0, ctx))).toBe('○e d i t i n gcart.js0:01')
   })
 })
 
