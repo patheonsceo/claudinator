@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { inatorQuip, inatorWord, noteText, stripColors, superscript, timeStripRow, timeStripSegments } from '../src/looks/common'
+import { inatorQuip, inatorWord, noteText, progressStrip, runStatsLine, stripColors, superscript, timeStripSegments } from '../src/looks/common'
 import { ctxOf, textOf } from './fixtures'
 
 describe('common look helpers', () => {
@@ -27,16 +27,23 @@ describe('common look helpers', () => {
   })
 })
 
-describe('the time strip, as the lookbook draws it', () => {
+describe('time under each run, and live task progress', () => {
   const data = { thinkingMs: 78_000, toolsMs: 42_000, waitingMs: 14_000 }
 
-  test('gridded cells, a gap between parts, and the legend on its own row in minutes and seconds', async () => {
-    const tree = timeStripRow(ctxOf({ columns: 120 }), data, stripColors('hairline', true)) as { children: unknown[] }
-    const [bar, legend] = tree.children
-    expect(textOf(bar)).toMatch(/^ *■+ ■+ ■+$/)
-    expect(textOf(legend)).toContain('thinking 1:18')
-    expect(textOf(legend)).toContain('tools 0:42')
-    expect(textOf(legend)).toContain('waiting on you 0:14')
+  test('each run closes with one line of where its time went, and its tasks when it had a list', async () => {
+    const line = textOf(runStatsLine(ctxOf({ columns: 120 }), { ...data, tasks: { done: 3, total: 5 } }, stripColors('hairline', true)))
+    expect(line).toContain('thinking 1:18')
+    expect(line).toContain('tools 0:42')
+    expect(line).toContain('waiting on you 0:14')
+    expect(line).toContain('3 of 5 tasks')
+    expect(textOf(runStatsLine(ctxOf(), { thinkingMs: 5_000, toolsMs: 600, waitingMs: 0 }, stripColors('hairline', true)))).not.toContain('waiting')
+  })
+
+  test('the live strip fills task by task and names the active one', async () => {
+    const text = textOf(progressStrip(ctxOf({ columns: 120 }), { done: 2, total: 4, active: 'Writing tests' }, stripColors('hairline', true)))
+    expect(text).toMatch(/■+ ■+ ■+ □+/)
+    expect(text).toContain('2 of 4')
+    expect(text).toContain('Writing tests')
   })
 
   test('every look has three distinct colors, in dark and in light', async () => {

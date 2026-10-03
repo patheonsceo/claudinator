@@ -3,7 +3,7 @@ import type { RenderElement } from 'claude-code'
 import { printable } from '../../engine/format'
 import { tone } from '../../engine/palette'
 import { factsOf } from '../../engine/tool-facts'
-import { inatorQuip, superscript, stripColors, timeStripRow } from '../common'
+import { inatorQuip, superscript, runStatsLine, stripColors } from '../common'
 import type { Ctx, FootnoteData, HeadlineData, ReceiptData } from '../look'
 import { channel, tagCell, targetOf } from './rows'
 import { C, NARROW_COLUMNS, RULE, fill, fixed, gauge, grow, percentLabel, shrinks, turnLabel, turnTime, txt } from './style'
@@ -53,7 +53,7 @@ function noteLine(ctx: Ctx, note: FootnoteData): RenderElement {
 export function receipt(data: ReceiptData, ctx: Ctx): RenderElement {
   const line = receiptLine(data, ctx)
   const notes = data.notes.map(n => noteLine(ctx, n))
-  const strip = data.timeStrip ? timeStripRow(ctx, data.timeStrip, { ...stripColors('mission', ctx.isDark), indent: 3 }) : null
+  const strip = data.timeStrip ? runStatsLine(ctx, data.timeStrip, { ...stripColors('mission', ctx.isDark), indent: 3 }) : null
   if (notes.length === 0 && !strip) return line
   return ctx.els.Box({ flexDirection: 'column', children: [...notes, line, ...(strip ? [strip] : [])] })
 }

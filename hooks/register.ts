@@ -15,7 +15,7 @@ import type { Settings, SettingsLayer } from '../src/engine/settings'
 import { decodeShareCode, encodeShareCode } from '../src/engine/share-code'
 import { factsOf, isFootnotable, isQuietable } from '../src/engine/tool-facts'
 import { LOOKS } from '../src/looks'
-import { waitingBand, withMarks } from '../src/looks/common'
+import { progressStrip, stripColors, waitingBand, withMarks } from '../src/looks/common'
 import { liveStateOf } from '../src/looks/hairline/live'
 import type { Ctx, LiveState, Look, ReceiptData, ToolRow, UsageData } from '../src/looks/look'
 import { navigatorView } from '../src/panes/navigator'
@@ -79,21 +79,19 @@ function currentSettings(): Settings {
   return resolveSettings([options, project, saved])
 }
 
-/** The strip and its legend need room; below this width the receipt goes without. */
-const TIME_STRIP_MIN_COLUMNS = 100
+/** The time line under each run needs room; below this width the receipt goes without. */
+const TIME_STRIP_MIN_COLUMNS = 60
 
 function receiptData(settings: Settings, durationMs: number, stats: Model.TurnStats | null, columns: number): ReceiptData {
   const data: ReceiptData = { durationMs, stats, notes: [], timeStrip: null }
   if (stats?.title) data.title = stats.title
   if (settings.ingredients.footnotes && stats?.notes) data.notes = stats.notes
-  // One strip, always just above the prompt: the newest turn's, and only while Claude is idle.
-  const isNewest = !model.isWorking && stats !== null && stats.turn === model.lastCompleted?.turn
-  if (settings.ingredients.timeStrip && isNewest && columns >= TIME_STRIP_MIN_COLUMNS && stats && stats.toolsMs !== undefined) {
+  if (settings.ingredients.timeStrip && columns >= TIME_STRIP_MIN_COLUMNS && stats && stats.toolsMs !== undefined) {
     const toolsMs = stats.toolsMs
     const waitingMs = stats.waitingMs ?? 0
     // Claude Code's duration leaves out permission waits, so thinking is measured against the turn's own time.
     const wallMs = stats.wallMs ?? durationMs
-    data.timeStrip = { thinkingMs: Math.max(0, wallMs - toolsMs - waitingMs), toolsMs, waitingMs }
+    data.timeStrip = { thinkingMs: Math.max(0, wallMs - toolsMs - waitingMs), toolsMs, waitingMs, ...(stats.tasks ? { tasks: stats.tasks } : {}) }
   }
   return data
 }
@@ -448,7 +446,11 @@ export const register: Register = (on, opts) => {
     const waiting = settings.ingredients.attention ? Model.waitingOf(model, await $.clock.now()) : null
     // The band is as wide as the body beside any docked pane, not the whole terminal.
     const ctx = ctxOf({ surface: e.surface, viewport: { columns: e.props.bodyColumns } }, $.ui.resolve(e), settings, 0)
-    const drawn = look.band({ usage, waiting, isWorking: model.isWorking }, ctx) ?? (waiting ? waitingBand(ctx, waiting) : null)
+    const own = look.band({ usage, waiting, isWorking: model.isWorking }, ctx) ?? (waiting ? waitingBand(ctx, waiting) : null)
+    // While Claude works through its todo list, how far it is sits right above the prompt.
+    const progress = settings.ingredients.timeStrip ? Model.progressOf(model) : null
+    const strip = progress ? progressStrip(ctx, progress, stripColors(settings.look === 'off' ? 'hairline' : settings.look, isDark)) : null
+    const drawn = strip && own ? ctx.els.Box({ flexDirection: 'column', children: [strip, own] }) : (strip ?? own)
     if (!drawn) return next(e)
     const others = await next(e)
     return ctx.els.Box({ flexDirection: 'column', children: [drawn, others] as RenderElement[] })

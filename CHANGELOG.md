@@ -21,7 +21,7 @@ All notable changes to Claudinator are recorded here. The format follows
 - The picker offers every look on `1` to `6` and Off on `7`, every ingredient on its letter key, and the combos.
 - `/config` no longer offers each ingredient; looks bring their defaults and the picker saves your choices.
 - Every look was polished against its lookbook design: its own marks and verbs on every row, a blank line before each step and around each receipt, and an animated live line above the prompt (Hairline's sliding trace, Broadsheet's pen and typewriter, Mission Control's sparkline, Prism's flowing dots, Sumi's self-drawing ensō, Blueprint's calipers). Hairline gains Hairline+'s aligned verb column, folded file lists and context bar.
-- The time strip is one gridded bar on the newest receipt, in each look's own colors, with its legend below.
+- The time strip becomes live progress: while Claude works through a todo list, a gridded strip above the prompt fills task by task and names the task in hand. Each run closes with one line of where its time went, in the look's colors, plus the tasks done.
 - Each look's Claude Code theme tints diffs with the look's own green and red instead of saturated blocks.
 - The picker is redesigned: a header with your setup, palette swatches for each look, ingredient switches, and the share code set apart. Each look's Claude Code theme also tints the docked pane and `!` command and memory messages, which Claude Code otherwise draws a fixed gray.
 

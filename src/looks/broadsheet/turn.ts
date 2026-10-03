@@ -2,7 +2,7 @@ import type { RenderElement } from 'claude-code'
 
 import { plural, printable } from '../../engine/format'
 import { tone } from '../../engine/palette'
-import { inatorQuip, notesBlock, stripColors, timeStripRow } from '../common'
+import { inatorQuip, notesBlock, runStatsLine, stripColors } from '../common'
 import type { Ctx, HeadlineData, ReceiptData } from '../look'
 import { roman, spelledDuration } from './prose'
 import { C, NARROW_COLUMNS, delta, fixed, grow, it, rule, txt } from './style'
@@ -70,7 +70,7 @@ export function receipt(data: ReceiptData, ctx: Ctx): RenderElement {
   parts.push(centered(ctx, colophon(data, ctx)))
   if (ctx.settings.ingredients.inator) parts.push(centered(ctx, it(ctx, C.accent, `${inatorQuip(data.stats)}.`, { wrap: 'truncate-end' })))
   if (data.timeStrip && ctx.columns >= NARROW_COLUMNS) {
-    parts.push(centered(ctx, timeStripRow(ctx, data.timeStrip, { ...stripColors('broadsheet', ctx.isDark), indent: 0 })))
+    parts.push(runStatsLine(ctx, data.timeStrip, { ...stripColors('broadsheet', ctx.isDark), indent: 0 }))
   }
   // Full width, so the colophon centers on the page and not on itself.
   return Box({ flexDirection: 'column', width: '100%', children: parts })

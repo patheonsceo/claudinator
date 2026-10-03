@@ -3,7 +3,7 @@ import type { RenderElement } from 'claude-code'
 import { formatDuration, plural, printable } from '../../engine/format'
 import { tone } from '../../engine/palette'
 import type { FileChange, TurnStats } from '../../engine/session-model'
-import { inatorQuip, notesBlock, stripColors, timeStripRow } from '../common'
+import { inatorQuip, notesBlock, runStatsLine, stripColors } from '../common'
 import type { Ctx, HeadlineData, ReceiptData } from '../look'
 import { C, NARROW_COLUMNS, clipped, delta, gradientRun, gradientText, grow, hex, hueOf, safePath, txt } from './style'
 
@@ -139,7 +139,7 @@ export function receipt(data: ReceiptData, ctx: Ctx): RenderElement {
     notesBlock(ctx, data.notes, { indent: 2, accent: p.g1 }),
     receiptLine(data, ctx),
     files.length > 0 ? legend(ctx, files, isCounted, indent) : null,
-    data.timeStrip ? timeStripRow(ctx, data.timeStrip, { ...stripColors('prism', ctx.isDark), indent }) : null,
+    data.timeStrip ? runStatsLine(ctx, data.timeStrip, { ...stripColors('prism', ctx.isDark), indent }) : null,
   ]
   const shown = blocks.filter((x): x is RenderElement => x !== null)
   return shown.length === 1 && shown[0] ? shown[0] : Box({ flexDirection: 'column', children: shown })

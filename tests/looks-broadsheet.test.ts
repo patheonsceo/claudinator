@@ -405,3 +405,12 @@ describe('broadsheet everywhere', () => {
     }
   })
 })
+
+describe('broadsheet time line', () => {
+  test('the time line sits flush left under the centered colophon', async () => {
+    const tree = BROADSHEET.receipt({ durationMs: 9_000, stats: { turn: 1, files: [], add: 0, del: 0 }, notes: [], timeStrip: { thinkingMs: 6_000, toolsMs: 2_000, waitingMs: 0 } }, ctxOf()) as { children: Array<{ props?: Record<string, unknown> }> }
+    const last = tree.children[tree.children.length - 1]
+    expect(last?.props?.justifyContent).toBeUndefined()
+    expect(textOf(last)).toContain('thinking 0:06')
+  })
+})

@@ -20,6 +20,8 @@ export type TurnStats = {
   waitingMs?: number
   /** The turn's footnotes, when Footnotes was on. */
   notes?: Note[]
+  /** Claude's todo list at the end of the turn, when it wrote one during it. */
+  tasks?: { done: number; total: number }
   /** A short title derived from the answer, for Headlines. */
   title?: string
 }
@@ -73,6 +75,9 @@ export type SessionModel = {
   shownTurns: Set<number>
   /** The turn just finished and its receipt not drawn yet. */
   isReceiptPending: boolean
+  /** Claude's latest todo list and the turn that wrote it, for live progress. */
+  todos: Todo[]
+  todosTurn: number
   /** The last call started this turn, for the live line between calls. */
   lastStep: Running | null
   /** The current turn's calls as spans of time, to measure tools and waiting without counting overlaps twice. */
@@ -80,6 +85,20 @@ export type SessionModel = {
 }
 
 type Span = { start: number; end: number; isWaiting: boolean }
+type Todo = { status: string; label: string }
+export type Progress = { done: number; total: number; active: string }
+
+/** The items of a TodoWrite call, or none when its input is not a list of todos. */
+function todosOf(input: unknown): Todo[] {
+  const list = typeof input === 'object' && input !== null ? (input as { todos?: unknown }).todos : undefined
+  if (!Array.isArray(list)) return []
+  return list.flatMap(item => {
+    if (typeof item !== 'object' || item === null) return []
+    const t = item as { status?: unknown; content?: unknown; activeForm?: unknown }
+    const label = typeof t.activeForm === 'string' && t.activeForm !== '' ? t.activeForm : typeof t.content === 'string' ? t.content : ''
+    return typeof t.status === 'string' ? [{ status: t.status, label: printable(label, 120) }] : []
+  })
+}
 
 /** How long after a permission prompt appears the working line's return means the user answered. */
 export const ANSWER_GAP_MS = 1000
@@ -122,6 +141,8 @@ export function createModel(): SessionModel {
     isReceiptPending: false,
     spans: [],
     lastStep: null,
+    todos: [],
+    todosTurn: 0,
   }
 }
 
@@ -188,6 +209,13 @@ export function toolStarted(m: SessionModel, id: string, tool: string, input: un
   m.lastActivityAt = now
   m.running.set(id, { tool, input, startedAt: now })
   if (!isSubagent) m.lastStep = { tool, input, startedAt: now }
+  if (!isSubagent && tool === 'TodoWrite') {
+    const todos = todosOf(input)
+    if (todos.length > 0) {
+      m.todos = todos
+      m.todosTurn = m.turn
+    }
+  }
   if (isSubagent) {
     m.subagentCalls.add(id)
     return
@@ -296,6 +324,7 @@ export function completeTurn(m: SessionModel, now: number, contextPercent?: numb
   m.current.waitingMs = waitingMs
   m.current.toolsMs = busyMs - waitingMs
   m.current.wallMs = Math.max(0, now - m.turnStartedAt)
+  if (m.todosTurn === m.turn && m.todos.length > 0) m.current.tasks = { done: m.todos.filter(t => t.status === 'completed').length, total: m.todos.length }
   m.isReceiptPending = true
   const record = m.turns[m.turns.length - 1]
   const title = headlineOf(answer, record?.prompt ?? '')
@@ -404,6 +433,13 @@ export function turnOfRow(m: SessionModel, requestId: string, now: number): numb
 
 export function durationOf(m: SessionModel, id: string): number | undefined {
   return m.toolMs.get(id)
+}
+
+/** How far through its todo list Claude is, while a turn runs that wrote one; otherwise null. */
+export function progressOf(m: SessionModel): Progress | null {
+  if (!m.isWorking || m.todosTurn !== m.turn || m.todos.length === 0) return null
+  const active = m.todos.find(t => t.status === 'in_progress') ?? m.todos.find(t => t.status !== 'completed')
+  return { done: m.todos.filter(t => t.status === 'completed').length, total: m.todos.length, active: active?.label ?? '' }
 }
 
 /** The step running now, else the last one started this turn: what the live line names between calls. */
