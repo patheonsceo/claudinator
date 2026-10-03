@@ -2,6 +2,7 @@ import type { RenderElement, TextProps } from 'claude-code'
 
 import { SLOW_MS, formatDuration, printable, splitPath } from '../../engine/format'
 import { fileColor, tone } from '../../engine/palette'
+import type { Glyph } from '../../engine/tool-facts'
 import type { Ctx } from '../look'
 
 /** Prism's text colors are theme tokens; its companion theme makes them exact. */
@@ -27,12 +28,16 @@ export type Hex = {
   ink: string
   /** Text drawn on saturated chips. */
   paper: string
-  neutralBg: string
-  neutralFg: string
+  /** The theme's text color, for muted chips. */
+  fg: string
+  /** Muted chip fills: reads, searches and the rest; commands; failures. */
+  cread: string
+  cbash: string
+  cfail: string
 }
 
-const DARK: Hex = { bg: '#0f0d16', g1: '#7c6cff', g2: '#ff6fa8', g3: '#ffb86b', err: '#ff7088', ink: '#0f0d16', paper: '#ffffff', neutralBg: '#2a2640', neutralFg: '#cfcce6' }
-const LIGHT: Hex = { bg: '#fbfaff', g1: '#5b4bff', g2: '#e0457f', g3: '#e08a2e', err: '#d0304d', ink: '#0f0d16', paper: '#ffffff', neutralBg: '#e8e4f7', neutralFg: '#3a3654' }
+const DARK: Hex = { bg: '#0f0d16', g1: '#7c6cff', g2: '#ff6fa8', g3: '#ffb86b', err: '#ff7088', ink: '#0f0d16', paper: '#ffffff', fg: '#ecebf5', cread: '#2b2550', cbash: '#3d3022', cfail: '#55202c' }
+const LIGHT: Hex = { bg: '#fbfaff', g1: '#5b4bff', g2: '#e0457f', g3: '#e08a2e', err: '#d0304d', ink: '#0f0d16', paper: '#ffffff', fg: '#1d1b29', cread: '#e4e0ff', cbash: '#f6ead9', cfail: '#fbdde3' }
 
 export function hex(ctx: Ctx): Hex {
   return ctx.isDark ? DARK : LIGHT
@@ -41,8 +46,65 @@ export function hex(ctx: Ctx): Hex {
 /** Below this width, rows drop secondary parts. */
 export const NARROW_COLUMNS = 100
 
-/** Width every tool row's chip slot takes, so paths line up: caps plus " ⌕ SEARCH ". */
-export const CHIP_COLUMNS = 12
+/** Width every chip slot takes, so targets line up: caps plus " ✦ AGENT ". */
+export const CHIP_COLUMNS = 11
+
+/** Where a row's target starts, and where its diff and result lines start too. */
+export const TARGET_COLUMN = CHIP_COLUMNS + 1
+
+/** A step's mark and word, as the lookbook names them. */
+export type Mark = { mark: string; word: string }
+
+/** The lookbook's marks per kind of step; `other` takes the tool's own word. */
+export const MARKS: Record<Glyph, Mark> = {
+  read: { mark: '◇', word: 'READ' },
+  search: { mark: '⌕', word: 'FIND' },
+  edit: { mark: '◆', word: 'EDIT' },
+  create: { mark: '✚', word: 'NEW' },
+  run: { mark: '›', word: 'RUN' },
+  web: { mark: '◎', word: 'WEB' },
+  agent: { mark: '✦', word: 'AGENT' },
+  other: { mark: '·', word: '' },
+}
+
+export const FAIL: Mark = { mark: '✕', word: 'FAIL' }
+export const STOP: Mark = { mark: '✕', word: 'STOP' }
+
+/** `EDIT`, `TODOS`; long MCP names end in an ellipsis instead of being cut. */
+export function chipWord(verb: string): string {
+  const word = printable(verb, 40).toUpperCase()
+  return word.length > 5 ? word.slice(0, 4) + '…' : word
+}
+
+/** A step's mark and word, from its facts. */
+export function markOf(glyph: Glyph, verb: string): Mark {
+  return glyph === 'other' ? { mark: MARKS.other.mark, word: chipWord(verb) } : MARKS[glyph]
+}
+
+/** ` ◇ READ `, ` ✚ NEW  `: one width for every four-letter word, so chips stack evenly. */
+export function chipLabel(m: Mark): string {
+  return ` ${m.mark} ${m.word.padEnd(4)} `
+}
+
+/**
+ * A step's pill as the lookbook paints it: the file's hue for single-file
+ * steps when File colors is on, a gradient for agents, the run tint for
+ * commands, the fail tint for failures, the read tint for everything else.
+ */
+export function stepChip(ctx: Ctx, glyph: Glyph, m: Mark, file = ''): RenderElement {
+  const h = hex(ctx)
+  const label = chipLabel(m)
+  if (m === FAIL || m === STOP) return chip(ctx, label, h.cfail, h.fg)
+  if (glyph === 'agent') return gradientChip(ctx, label)
+  const isFile = glyph === 'read' || glyph === 'edit' || glyph === 'create'
+  if (isFile && file !== '' && ctx.settings.ingredients.fileColors) return chip(ctx, label, hueOf(ctx, file))
+  return chip(ctx, label, glyph === 'run' ? h.cbash : h.cread, h.fg)
+}
+
+/** The chip in its fixed slot, so whatever follows starts at TARGET_COLUMN. */
+export function chipSlot(ctx: Ctx, pill: RenderElement): RenderElement {
+  return ctx.els.Box({ width: CHIP_COLUMNS, flexShrink: 0, children: pill })
+}
 
 function rgb(color: string): [number, number, number] {
   const n = parseInt(color.slice(1, 7), 16)
