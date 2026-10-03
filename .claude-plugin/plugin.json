@@ -1,0 +1,25 @@
+{
+  "name": "claudinator",
+  "displayName": "Claudinator",
+  "version": "0.0.0",
+  "description": "Give Claude Code a glow-up: switchable looks and mixable ingredients for tool calls, the thinking line and turn receipts. Draws locally, makes no network requests.",
+  "author": { "name": "patheonsceo", "url": "https://github.com/patheonsceo" },
+  "homepage": "https://github.com/patheonsceo/claudinator",
+  "repository": "https://github.com/patheonsceo/claudinator",
+  "license": "MIT",
+  "keywords": ["mods", "ui", "theme", "tool-calls", "spinner", "terminal"],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "look": {
+      "type": "string",
+      "title": "Look",
+      "description": "The look Claudinator starts with. Your choice in the /claudinator picker takes precedence.",
+      "options": ["hairline", "off"],
+      "default": "hairline"
+    },
+    "recency": { "type": "boolean", "title": "Recency fade", "description": "Older rows fade so your eye lands on the newest.", "default": true },
+    "miniDiffs": { "type": "boolean", "title": "Mini diffs", "description": "Edits show their key changed lines under the row.", "default": true },
+    "fileColors": { "type": "boolean", "title": "File colors", "description": "Each file keeps one color everywhere.", "default": false },
+    "quiet": { "type": "boolean", "title": "Quiet transcript", "description": "Hide reads, searches and passing commands; keep Claude's prose and the changes.", "default": false }
+  }
+}

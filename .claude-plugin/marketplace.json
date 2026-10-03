@@ -1,0 +1,13 @@
+{
+  "name": "claudinator",
+  "owner": { "name": "patheonsceo", "url": "https://github.com/patheonsceo" },
+  "description": "Claudinator: switchable looks and mixable ingredients for the Claude Code interface.",
+  "plugins": [
+    {
+      "name": "claudinator",
+      "source": "./",
+      "description": "Switchable looks and mixable ingredients for tool calls, the thinking line and turn receipts.",
+      "category": "productivity"
+    }
+  ]
+}

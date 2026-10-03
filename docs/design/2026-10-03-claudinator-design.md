@@ -117,7 +117,7 @@ Commands are registered last in `session.start`, because a name collision throws
 ## 4. Architecture
 
 ```
-hooks/register.tsx        The only file that touches $. Registers every hook and
+hooks/register.ts        The only file that touches $. Registers every hook and
                           command, builds the capability object, owns timers.
 src/engine/
   settings.ts             Settings schema, defaults, validation, migration,
@@ -129,10 +129,10 @@ src/engine/
                           background, gradients, 256-color fallback.
 src/looks/
   look.ts                 The Look interface every look implements.
-  hairline.tsx … thermal.tsx
+  hairline/ … thermal/
 src/ingredients/          One file per ingredient: a pure transform applied by
                           the engine before or after the look draws a row.
-src/panes/                picker.tsx, chapters.tsx, ledger.tsx, pins.tsx
+src/panes/                picker.ts, chapters.ts, ledger.ts, pins.ts
 themes/                   Companion Claude Code themes, one JSON per look.
 types/index.d.ts          The $.state contract.
 ```
@@ -215,7 +215,7 @@ The plugin sits at the root of its own repository, which the directory recommend
                           userConfig, types, experimental.themes
   marketplace.json        { name: "claudinator", plugins: [{ name: "claudinator", source: "./" }] }
 hooks/
-  hooks.json              { "modules": ["./register.tsx"] }
+  hooks.json              { "modules": ["./register.ts"] }
   register.tsx
 src/                      engine, looks, ingredients, panes (section 4)
 themes/                   companion Claude Code themes

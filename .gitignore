@@ -7,3 +7,6 @@ node_modules/
 
 # Demo recording output (GIFs are published from the media branch)
 demos/out/
+
+# Local agent workspaces
+.superpowers/
