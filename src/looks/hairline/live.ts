@@ -52,7 +52,7 @@ export function live(state: LiveState, frame: number, ctx: Ctx): RenderElement {
   const flat = { ...ctx, fade: 0 as const }
   const detail = grow(flat, txt(flat, C.dim, state.detail, { wrap: 'truncate-end' }))
   const els = ctx.els
-  if ('Raster' in els) {
+  if (ctx.surface === 'terminal' && 'Raster' in els) {
     const [pulse, clock] = liveFrames(state, frame)
     return els.Box({
       flexDirection: 'row',

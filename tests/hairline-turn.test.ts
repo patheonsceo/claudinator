@@ -51,6 +51,12 @@ describe('hairline turn pieces', () => {
     expect(textOf(tree)).toContain('0:03')
   })
 
+  test('the desktop live line uses text even when the table offers a Raster', async () => {
+    const tree = live({ mode: 'thinking', detail: '', elapsedMs: 1_000 }, 0, ctxOf({ surface: 'desktop' }))
+    expect(JSON.stringify(tree)).not.toContain('Raster')
+    expect(textOf(tree)).toContain('Thinking')
+  })
+
   test('the registry has Hairline and Off', async () => {
     expect(LOOKS.hairline).not.toBeNull()
     expect(LOOKS.off).toBeNull()
