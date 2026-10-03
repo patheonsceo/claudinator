@@ -110,7 +110,7 @@ export function lineDelta(before: string, after: string): Omit<Change, 'file'> {
 /** The change an Edit, MultiEdit or Write call makes, or null for other tools. */
 export function changeOf(tool: string, input: unknown): Change | null {
   const i = rec(input)
-  const file = str(i.file_path)
+  const file = printable(str(i.file_path), 1000)
   if (tool === 'Edit') return { file, ...lineDelta(str(i.old_string), str(i.new_string)) }
   if (tool === 'Write') return { file, ...lineDelta('', str(i.content)) }
   if (tool === 'MultiEdit') {
