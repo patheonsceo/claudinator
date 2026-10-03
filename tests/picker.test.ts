@@ -18,13 +18,37 @@ function find(tree: unknown, key: string): Record<string, unknown> | undefined {
   return undefined
 }
 
+/** The element itself (not its props) with this key, to read the text it draws. */
+function node(tree: unknown, key: string): unknown {
+  if (tree === null || typeof tree !== 'object') return undefined
+  const t = tree as { props?: Record<string, unknown>; children?: unknown[] }
+  if (t.props?.key === key) return t
+  for (const child of t.children ?? []) {
+    const hit = node(child, key)
+    if (hit) return hit
+  }
+  return undefined
+}
+
 describe('picker', () => {
-  test('lists every look and ingredient with its state', async () => {
+  test('the header names the current look and counts the ingredients on', async () => {
     const text = textOf(pickerView(TERMINAL_ELS, DEFAULT_SETTINGS, info, noop))
-    expect(text).toContain('Hairline')
-    expect(text).toContain('Off')
-    expect(text).toContain('Recency fade · on')
-    expect(text).toContain('File colors · off')
+    expect(text).toContain('Claudinator')
+    expect(text).toContain('Hairline · 3 ingredients on')
+  })
+
+  test('each ingredient shows a switch: filled when on, hollow when off', async () => {
+    const tree = pickerView(TERMINAL_ELS, DEFAULT_SETTINGS, info, noop)
+    expect(textOf(node(tree, 'row-ingredient-recency'))).toContain('●')
+    expect(textOf(node(tree, 'row-ingredient-fileColors'))).toContain('○')
+  })
+
+  test('the current look is marked, and each look shows a tagline where there is room', async () => {
+    const wide = pickerView(TERMINAL_ELS, DEFAULT_SETTINGS, { ...info, columns: 52 }, noop)
+    expect(textOf(node(wide, 'row-look-hairline'))).toContain('›')
+    expect(textOf(node(wide, 'row-look-sumi'))).not.toContain('›')
+    expect(textOf(wide)).toContain('Swiss-quiet')
+    expect(textOf(pickerView(TERMINAL_ELS, DEFAULT_SETTINGS, { ...info, columns: 34 }, noop))).not.toContain('Swiss-quiet')
   })
 
   test('buttons call back with what they change', async () => {

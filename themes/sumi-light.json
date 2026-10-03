@@ -2,6 +2,9 @@
   "name": "Claudinator Sumi Light",
   "base": "light",
   "overrides": {
+    "composerSidebarBackground": "#eeede9",
+    "bashMessageBackgroundColor": "#eeede9",
+    "memoryBackgroundColor": "#eeede9",
     "claude": "#2d4f9e",
     "claudeShimmer": "#4a69b4",
     "text": "#1b1a18",

@@ -2,6 +2,9 @@
   "name": "Claudinator Prism Dark",
   "base": "dark",
   "overrides": {
+    "composerSidebarBackground": "#181524",
+    "bashMessageBackgroundColor": "#181524",
+    "memoryBackgroundColor": "#181524",
     "claude": "#7c6cff",
     "claudeShimmer": "#a296ff",
     "text": "#ecebf5",

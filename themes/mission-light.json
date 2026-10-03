@@ -2,6 +2,9 @@
   "name": "Claudinator Mission Control Light",
   "base": "light",
   "overrides": {
+    "composerSidebarBackground": "#e9ebe6",
+    "bashMessageBackgroundColor": "#e9ebe6",
+    "memoryBackgroundColor": "#e9ebe6",
     "claude": "#b26a00",
     "claudeShimmer": "#d08a20",
     "text": "#191b19",

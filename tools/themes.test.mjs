@@ -16,6 +16,16 @@ test('the Claude Code theme names the look and carries the tokens', () => {
   assert.deepEqual(claudeTheme(palette, 'dark'), { name: 'Claudinator Hairline Dark', base: 'dark', overrides: { claude: '#a0a3ff', text: '#e8e9ee' } })
 })
 
+test('surfaces Claude Code leaves gray, such as the pane beside the transcript, take the look\'s raised surface', () => {
+  const raised = { ...palette, variants: { dark: { ...variant, tokens: { ...variant.tokens, userMessageBackground: '#17181d' } } } }
+  const { overrides } = claudeTheme(raised, 'dark')
+  assert.equal(overrides.composerSidebarBackground, '#17181d')
+  assert.equal(overrides.bashMessageBackgroundColor, '#17181d')
+  assert.equal(overrides.memoryBackgroundColor, '#17181d')
+  const own = { ...palette, variants: { dark: { ...variant, tokens: { ...variant.tokens, userMessageBackground: '#17181d', composerSidebarBackground: '#101010' } } } }
+  assert.equal(claudeTheme(own, 'dark').overrides.composerSidebarBackground, '#101010')
+})
+
 test('every terminal format carries all sixteen colors and the background', () => {
   for (const render of [ghostty, kitty, wezterm, alacritty, windowsTerminal, iterm2]) {
     const text = render(palette, 'dark')

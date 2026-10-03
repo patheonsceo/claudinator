@@ -2,6 +2,9 @@
   "name": "Claudinator Hairline Light",
   "base": "light",
   "overrides": {
+    "composerSidebarBackground": "#f1f2f6",
+    "bashMessageBackgroundColor": "#f1f2f6",
+    "memoryBackgroundColor": "#f1f2f6",
     "claude": "#5559de",
     "claudeShimmer": "#7c7fe8",
     "text": "#1c1d22",

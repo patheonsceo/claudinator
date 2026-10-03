@@ -58,7 +58,7 @@ describe('register', () => {
     await $.session.start(SESSION)
     const pane = await $.ui.mount({ plugin: 'claudinator', surface: 'terminal', component: 'Pane', requestId: 'claudinator', props: PICKER_PROPS })
     await pane.press({ key: 'ingredient-fileColors' })
-    expect(textOf(await pane.drawn())).toContain('File colors · on')
+    expect(textOf(await pane.drawn())).toContain('● File colors')
     await pane.unmount()
   })
 

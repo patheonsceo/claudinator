@@ -24,9 +24,16 @@ function slug(palette, variant) {
   return `claudinator-${palette.id}-${variant}`
 }
 
+// Surfaces Claude Code paints a fixed gray in every theme: the pane docked beside
+// the transcript, and `!` command and memory messages. Unless a palette sets them,
+// they take the look's raised surface, the color of your own prompts.
+const RAISED_SURFACES = ['composerSidebarBackground', 'bashMessageBackgroundColor', 'memoryBackgroundColor']
+
 export function claudeTheme(palette, variant) {
   const x = v(palette, variant)
-  return { name: title(palette, variant), base: x.base, overrides: { ...x.tokens } }
+  const raised = x.tokens.userMessageBackground
+  const surfaces = raised === undefined ? {} : Object.fromEntries(RAISED_SURFACES.map(key => [key, raised]))
+  return { name: title(palette, variant), base: x.base, overrides: { ...surfaces, ...x.tokens } }
 }
 
 export function ghostty(palette, variant) {
