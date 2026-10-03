@@ -29,11 +29,34 @@ function slug(palette, variant) {
 // they take the look's raised surface, the color of your own prompts.
 const RAISED_SURFACES = ['composerSidebarBackground', 'bashMessageBackgroundColor', 'memoryBackgroundColor']
 
+/** `color` laid over `ground` at `amount` (0 to 1), as CSS color-mix in sRGB. */
+function mix(color, ground, amount) {
+  const rgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16))
+  const [a, b] = [rgb(color), rgb(ground)]
+  return '#' + a.map((c, i) => Math.round(c * amount + b[i] * (1 - amount)).toString(16).padStart(2, '0')).join('')
+}
+
+// Diffs are tinted, not painted: the look's own green and red at a fraction
+// over its background, as the lookbook draws changed lines.
+function diffTokens(x) {
+  const { success, error } = x.tokens
+  const ground = x.terminal.background
+  if (!success || !error || !ground) return {}
+  return {
+    diffAdded: mix(success, ground, 0.14),
+    diffRemoved: mix(error, ground, 0.14),
+    diffAddedDimmed: mix(success, ground, 0.08),
+    diffRemovedDimmed: mix(error, ground, 0.08),
+    diffAddedWord: mix(success, ground, 0.3),
+    diffRemovedWord: mix(error, ground, 0.3),
+  }
+}
+
 export function claudeTheme(palette, variant) {
   const x = v(palette, variant)
   const raised = x.tokens.userMessageBackground
   const surfaces = raised === undefined ? {} : Object.fromEntries(RAISED_SURFACES.map(key => [key, raised]))
-  return { name: title(palette, variant), base: x.base, overrides: { ...surfaces, ...x.tokens } }
+  return { name: title(palette, variant), base: x.base, overrides: { ...surfaces, ...x.tokens, ...diffTokens(x) } }
 }
 
 export function ghostty(palette, variant) {

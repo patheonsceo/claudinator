@@ -26,6 +26,15 @@ test('surfaces Claude Code leaves gray, such as the pane beside the transcript, 
   assert.equal(claudeTheme(own, 'dark').overrides.composerSidebarBackground, '#101010')
 })
 
+test('diffs are tinted, not painted: the look\'s green and red at a fraction over its background', () => {
+  const tinted = { ...palette, variants: { dark: { ...variant, tokens: { ...variant.tokens, success: '#7fd1a8', error: '#ff7a85', diffAdded: '#00ff00' } } } }
+  const { overrides } = claudeTheme(tinted, 'dark')
+  // 14% of #7fd1a8 over #111216, as the lookbook's diff lines.
+  assert.equal(overrides.diffAdded, '#202d2a')
+  assert.equal(overrides.diffRemoved, '#322126')
+  assert.ok(overrides.diffAddedDimmed && overrides.diffRemovedDimmed && overrides.diffAddedWord && overrides.diffRemovedWord)
+})
+
 test('every terminal format carries all sixteen colors and the background', () => {
   for (const render of [ghostty, kitty, wezterm, alacritty, windowsTerminal, iterm2]) {
     const text = render(palette, 'dark')
