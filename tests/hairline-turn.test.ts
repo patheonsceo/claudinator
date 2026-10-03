@@ -74,7 +74,10 @@ describe('hairline turn pieces', () => {
   test('the live state names what Claude is doing', async () => {
     expect(liveStateOf('thinking', undefined, 1_000, '/work')).toEqual({ mode: 'thinking', detail: '', elapsedMs: 1_000 })
     expect(liveStateOf('responding', undefined, 0, '/work').mode).toBe('writing')
-    expect(liveStateOf('tool-use', { tool: 'Read', input: { file_path: '/work/src/a.ts' }, startedAt: 0 }, 0, '/work')).toEqual({ mode: 'running', detail: 'Read src/a.ts', elapsedMs: 0 })
+    expect(liveStateOf('tool-use', { tool: 'Read', input: { file_path: '/work/src/a.ts' }, startedAt: 0 }, 0, '/work')).toEqual({ mode: 'running', detail: 'src/a.ts', activity: 'Reading', elapsedMs: 0 })
+    // The word names the step once: never "Running Run npm test".
+    expect(liveStateOf('tool-use', { tool: 'Bash', input: { command: 'npm test' }, startedAt: 0 }, 0, '/work')).toEqual({ mode: 'running', detail: 'npm test', activity: 'Running', elapsedMs: 0 })
+    expect(liveStateOf('tool-use', { tool: 'Edit', input: { file_path: '/work/a.ts' }, startedAt: 0 }, 0, '/work').activity).toBe('Editing')
   })
 
   test('a status message from Claude Code replaces the detail', async () => {

@@ -39,7 +39,7 @@ export function flowAt(t: number): number {
 const SPEED = 0.035
 
 function wordOf(state: LiveState): string {
-  return state.inator && state.mode === 'thinking' ? INATOR_WORD : LIVE_WORDS[state.mode]
+  return state.inator && state.mode === 'thinking' ? INATOR_WORD : (state.activity ?? LIVE_WORDS[state.mode])
 }
 
 /** `✦ Thinking` with light flowing through it, then a drifting band of particles. Deterministic per frame. */
@@ -106,7 +106,7 @@ export function live(state: LiveState, frame: number, ctx: Ctx): RenderElement {
     })
   }
   const p = hex(flat)
-  const word = isInator && state.mode === 'thinking' ? inatorWord(frame) : LIVE_WORDS[state.mode]
+  const word = isInator && state.mode === 'thinking' ? inatorWord(frame) : (state.activity ?? LIVE_WORDS[state.mode])
   return els.Box({
     flexDirection: 'row',
     columnGap: 1,

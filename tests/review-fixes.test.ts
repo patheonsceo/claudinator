@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'claude-code/testing'
 
 import { waitsOnUser } from '../src/engine/attention'
-import { printable } from '../src/engine/format'
+import { printable, splitPath } from '../src/engine/format'
 import * as Model from '../src/engine/session-model'
 import { decodeShareCode, encodeShareCode } from '../src/engine/share-code'
 import { DEFAULT_SETTINGS, projectLayerOf, resolveSettings } from '../src/engine/settings'
@@ -329,5 +329,13 @@ describe('room to breathe', () => {
     const receipt = props(await $.ui.render(turnDurationInput(4_000)))
     expect(receipt.marginTop).toBe(1)
     expect(receipt.marginBottom).toBe(1)
+  })
+})
+
+describe('paths that are the project itself', () => {
+  test('the working directory reads as ./, never as a file named after the folder', async () => {
+    expect(splitPath('/work', '/work')).toEqual({ dir: '', base: './' })
+    expect(splitPath('/work/', '/work')).toEqual({ dir: '', base: './' })
+    expect(splitPath('/work/src/a.ts', '/work')).toEqual({ dir: 'src/', base: 'a.ts' })
   })
 })
