@@ -337,6 +337,7 @@ export const register: Register = (on, opts) => {
     try {
       const result = await next(e)
       isError = Boolean(result && typeof result === 'object' && ('deny' in result || ('isError' in result && result.isError)))
+      if (!isError && !isSubagent && 'result' in result) Model.taskToolDone(model, e.tool, e, result.result)
       return result
     } finally {
       Model.waitingEnded(model, e.tool_use_id)
