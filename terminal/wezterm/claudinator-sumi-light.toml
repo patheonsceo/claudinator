@@ -1,0 +1,13 @@
+[colors]
+foreground = "#1b1a18"
+background = "#f4f3f0"
+cursor_bg = "#2d4f9e"
+cursor_border = "#2d4f9e"
+cursor_fg = "#f4f3f0"
+selection_bg = "#d8dceb"
+selection_fg = "#1b1a18"
+ansi = ["#2a2926", "#a8453a", "#56704a", "#87692c", "#2d4f9e", "#6b5384", "#3f6d69", "#d9d6cf"]
+brights = ["#7a7771", "#bd5d51", "#6b865e", "#a0823f", "#4a69b4", "#836c9c", "#568581", "#ffffff"]
+
+[metadata]
+name = "Claudinator Sumi Light"

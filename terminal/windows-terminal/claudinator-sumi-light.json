@@ -1,0 +1,23 @@
+{
+  "name": "Claudinator Sumi Light",
+  "background": "#f4f3f0",
+  "foreground": "#1b1a18",
+  "cursorColor": "#2d4f9e",
+  "selectionBackground": "#d8dceb",
+  "black": "#2a2926",
+  "red": "#a8453a",
+  "green": "#56704a",
+  "yellow": "#87692c",
+  "blue": "#2d4f9e",
+  "purple": "#6b5384",
+  "cyan": "#3f6d69",
+  "white": "#d9d6cf",
+  "brightBlack": "#7a7771",
+  "brightRed": "#bd5d51",
+  "brightGreen": "#6b865e",
+  "brightYellow": "#a0823f",
+  "brightBlue": "#4a69b4",
+  "brightPurple": "#836c9c",
+  "brightCyan": "#568581",
+  "brightWhite": "#ffffff"
+}

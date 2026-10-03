@@ -1,0 +1,13 @@
+[colors]
+foreground = "#e9e6e1"
+background = "#0e0e0f"
+cursor_bg = "#8aa4e0"
+cursor_border = "#8aa4e0"
+cursor_fg = "#0e0e0f"
+selection_bg = "#26282e"
+selection_fg = "#e9e6e1"
+ansi = ["#1a1a1b", "#c98a80", "#a9b8a0", "#c9b98e", "#8aa4e0", "#a99abf", "#93afac", "#c9c5be"]
+brights = ["#4a4845", "#d9a197", "#bccab3", "#d9cba4", "#a5b9e8", "#bdb0cf", "#aac2bf", "#f4f1ec"]
+
+[metadata]
+name = "Claudinator Sumi Dark"

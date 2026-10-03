@@ -1,0 +1,32 @@
+# Claudinator Sumi Dark
+[colors.primary]
+background = "#0e0e0f"
+foreground = "#e9e6e1"
+
+[colors.cursor]
+cursor = "#8aa4e0"
+text = "#0e0e0f"
+
+[colors.selection]
+background = "#26282e"
+text = "#e9e6e1"
+
+[colors.normal]
+black = "#1a1a1b"
+red = "#c98a80"
+green = "#a9b8a0"
+yellow = "#c9b98e"
+blue = "#8aa4e0"
+magenta = "#a99abf"
+cyan = "#93afac"
+white = "#c9c5be"
+
+[colors.bright]
+black = "#4a4845"
+red = "#d9a197"
+green = "#bccab3"
+yellow = "#d9cba4"
+blue = "#a5b9e8"
+magenta = "#bdb0cf"
+cyan = "#aac2bf"
+white = "#f4f1ec"
