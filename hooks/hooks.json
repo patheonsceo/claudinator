@@ -1,0 +1,4 @@
+{
+  "description": "Claudinator: looks and ingredients for the Claude Code interface",
+  "modules": ["./register.ts"]
+}
