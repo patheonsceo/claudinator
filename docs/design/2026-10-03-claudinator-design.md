@@ -1,7 +1,7 @@
 # Claudinator design spec
 
 - **Date:** 2026-10-03
-- **Status:** Draft, awaiting review
+- **Status:** Approved 2026-10-03
 - **Target:** Claude Code v2.1.287 or later (mods), verified on v2.1.288
 - **Visual reference:** the lookbook, which shows every look and ingredient as an interactive mock. Screens from it will be added to `docs/media/` with the first release.
 
