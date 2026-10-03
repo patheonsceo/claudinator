@@ -33,4 +33,8 @@ describe('every look on every site', () => {
       })
     }
   }
+
+  test('the registry has a look for every id but Off', async () => {
+    expect(LOOK_IDS.filter(id => id !== 'off' && LOOKS[id] === null)).toEqual([])
+  })
 })
