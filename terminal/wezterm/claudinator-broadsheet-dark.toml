@@ -1,0 +1,13 @@
+[colors]
+foreground = "#ece5d8"
+background = "#14120f"
+cursor_bg = "#e3b65c"
+cursor_border = "#e3b65c"
+cursor_fg = "#14120f"
+selection_bg = "#3a3226"
+selection_fg = "#ece5d8"
+ansi = ["#1f1c17", "#ef8b73", "#b3cf8e", "#e3b65c", "#8fa8c8", "#d6a3b5", "#8fbfb4", "#cfc7b8"]
+brights = ["#4a443a", "#f5a893", "#c8deaa", "#edc983", "#aabfdb", "#e3bccb", "#aad2c8", "#f7f1e6"]
+
+[metadata]
+name = "Claudinator Broadsheet Dark"

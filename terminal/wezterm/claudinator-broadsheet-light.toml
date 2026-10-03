@@ -1,0 +1,13 @@
+[colors]
+foreground = "#25221d"
+background = "#f7f6f3"
+cursor_bg = "#94680f"
+cursor_border = "#94680f"
+cursor_fg = "#f7f6f3"
+selection_bg = "#ebe1cb"
+selection_fg = "#25221d"
+ansi = ["#25221d", "#b2432c", "#4d7a2b", "#94680f", "#3b5f8a", "#8e4766", "#2f6f68", "#dad5cc"]
+brights = ["#77716a", "#c85a42", "#5f9135", "#b0832a", "#4f75a3", "#a75b7d", "#3c8880", "#ffffff"]
+
+[metadata]
+name = "Claudinator Broadsheet Light"

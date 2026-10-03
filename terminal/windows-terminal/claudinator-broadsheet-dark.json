@@ -1,0 +1,23 @@
+{
+  "name": "Claudinator Broadsheet Dark",
+  "background": "#14120f",
+  "foreground": "#ece5d8",
+  "cursorColor": "#e3b65c",
+  "selectionBackground": "#3a3226",
+  "black": "#1f1c17",
+  "red": "#ef8b73",
+  "green": "#b3cf8e",
+  "yellow": "#e3b65c",
+  "blue": "#8fa8c8",
+  "purple": "#d6a3b5",
+  "cyan": "#8fbfb4",
+  "white": "#cfc7b8",
+  "brightBlack": "#4a443a",
+  "brightRed": "#f5a893",
+  "brightGreen": "#c8deaa",
+  "brightYellow": "#edc983",
+  "brightBlue": "#aabfdb",
+  "brightPurple": "#e3bccb",
+  "brightCyan": "#aad2c8",
+  "brightWhite": "#f7f1e6"
+}

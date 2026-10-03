@@ -1,0 +1,22 @@
+# Claudinator Broadsheet Dark
+palette = 0=#1f1c17
+palette = 1=#ef8b73
+palette = 2=#b3cf8e
+palette = 3=#e3b65c
+palette = 4=#8fa8c8
+palette = 5=#d6a3b5
+palette = 6=#8fbfb4
+palette = 7=#cfc7b8
+palette = 8=#4a443a
+palette = 9=#f5a893
+palette = 10=#c8deaa
+palette = 11=#edc983
+palette = 12=#aabfdb
+palette = 13=#e3bccb
+palette = 14=#aad2c8
+palette = 15=#f7f1e6
+background = #14120f
+foreground = #ece5d8
+cursor-color = #e3b65c
+selection-background = #3a3226
+selection-foreground = #ece5d8

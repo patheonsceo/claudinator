@@ -1,0 +1,23 @@
+{
+  "name": "Claudinator Broadsheet Light",
+  "background": "#f7f6f3",
+  "foreground": "#25221d",
+  "cursorColor": "#94680f",
+  "selectionBackground": "#ebe1cb",
+  "black": "#25221d",
+  "red": "#b2432c",
+  "green": "#4d7a2b",
+  "yellow": "#94680f",
+  "blue": "#3b5f8a",
+  "purple": "#8e4766",
+  "cyan": "#2f6f68",
+  "white": "#dad5cc",
+  "brightBlack": "#77716a",
+  "brightRed": "#c85a42",
+  "brightGreen": "#5f9135",
+  "brightYellow": "#b0832a",
+  "brightBlue": "#4f75a3",
+  "brightPurple": "#a75b7d",
+  "brightCyan": "#3c8880",
+  "brightWhite": "#ffffff"
+}
