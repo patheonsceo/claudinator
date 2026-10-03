@@ -10,8 +10,8 @@ Type "/look hairline"
 Sleep 800ms
 Enter
 Sleep 1s
-Type "Run node --test with Bash and tell me the result." Enter
-Wait+Screen@90s /Do you want|proceed|Allow/
+Type "Create a file notes.txt containing the word hello." Enter
+Wait+Screen@90s /Do you want/
 Show
 Sleep 4s
 Hide
