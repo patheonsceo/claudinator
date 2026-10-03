@@ -22,6 +22,7 @@ for tape in "$@"; do
   echo "▶ $tape"
   vhs "$tape"
   git checkout -q -- demos/fixture
+  git clean -fdq -- demos/fixture
 done
 
 du -h demos/out/*.gif
