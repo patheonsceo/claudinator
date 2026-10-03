@@ -21,5 +21,5 @@ export const TERMINAL_ELS = {
 export const DESKTOP_ELS = { Box: make('Box'), Text: make('Text'), Button: make('Button') } as unknown as ElementTable<'desktop'>
 
 export function ctxOf(overrides: Partial<Ctx> = {}): Ctx {
-  return { els: TERMINAL_ELS, surface: 'terminal', columns: 120, settings: DEFAULT_SETTINGS, fade: 0, cwd: '/work', ...overrides }
+  return { els: TERMINAL_ELS, surface: 'terminal', columns: 120, settings: DEFAULT_SETTINGS, fade: 0, cwd: '/work', isDark: true, ...overrides }
 }

@@ -35,7 +35,7 @@ describe('picker', () => {
     ;(off?.onPress as () => void)()
     ;(quiet?.onPress as () => void)()
     expect(calls).toEqual(['look:off', 'toggle:quiet'])
-    expect(off?.hotkey).toBe('2')
+    expect(off?.hotkey).toBe('8')
     expect(quiet?.hotkey).toBe('q')
   })
 

@@ -24,10 +24,11 @@ let saved: SettingsLayer = {}
 let cwd = ''
 let frame = 0
 let isFullscreen = true
+let isDark = true
 let live: { requestId: string; state: LiveState } | null = null
 
 function ctxOf(e: { surface: RenderSurface; viewport?: { columns: number } }, els: ElementTable, settings: Settings, fade: 0 | 1 | 2): Ctx {
-  return { els, surface: e.surface, columns: e.viewport?.columns ?? 120, settings, fade, cwd }
+  return { els, surface: e.surface, columns: e.viewport?.columns ?? 120, settings, fade, cwd, isDark }
 }
 
 function rowOf(id: string, p: { tool: string; input: unknown; isRunning: boolean; isErrored: boolean; isInterrupted: boolean }): ToolRow {
@@ -248,7 +249,7 @@ export const register: Register = (on, opts) => {
     if (!look) return next(e)
     const stats = Model.receiptFor(model, e.requestId, await $.clock.now())
     const fade = fadeOf(stats?.turn, model.turn, settings.ingredients.recency)
-    return look.receipt({ durationMs: e.props.durationMs, stats }, ctxOf(e, $.ui.resolve(e), settings, fade))
+    return look.receipt({ durationMs: e.props.durationMs, stats, notes: [], timeStrip: null }, ctxOf(e, $.ui.resolve(e), settings, fade))
   }).catch(async ($, e, next) => next(e))
 
   on('ui.render', { component: 'Spinner' }, async ($, e, next) => {

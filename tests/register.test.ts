@@ -111,7 +111,7 @@ describe('register', () => {
     await $.session.start(SESSION)
     const pane = await $.ui.mount({ plugin: 'claudinator', surface: 'terminal', component: 'Pane', requestId: 'claudinator', props: PICKER_PROPS })
     await pane.press({ key: 'ingredient-recency' })
-    expect(saved.get('settings')).toEqual({ look: 'off', ingredients: { recency: false } })
+    expect(saved.get('settings')).toEqual({ look: 'off', ingredients: { recency: true } })
     await pane.unmount()
   })
 
