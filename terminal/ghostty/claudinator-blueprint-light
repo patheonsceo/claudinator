@@ -1,0 +1,22 @@
+# Claudinator Blueprint Light
+palette = 0=#0f2d5c
+palette = 1=#b8392b
+palette = 2=#1c7a52
+palette = 3=#8a6100
+palette = 4=#1b6fd1
+palette = 5=#6b4fc4
+palette = 6=#0e7fa8
+palette = 7=#c3d4ee
+palette = 8=#5878a6
+palette = 9=#d2503f
+palette = 10=#23946a
+palette = 11=#a87a10
+palette = 12=#3f8ae6
+palette = 13=#8569d8
+palette = 14=#1597c4
+palette = 15=#ffffff
+background = #f4f8ff
+foreground = #0f2d5c
+cursor-color = #1b6fd1
+selection-background = #d3e3fb
+selection-foreground = #0f2d5c

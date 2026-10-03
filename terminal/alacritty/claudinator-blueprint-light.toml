@@ -1,0 +1,32 @@
+# Claudinator Blueprint Light
+[colors.primary]
+background = "#f4f8ff"
+foreground = "#0f2d5c"
+
+[colors.cursor]
+cursor = "#1b6fd1"
+text = "#f4f8ff"
+
+[colors.selection]
+background = "#d3e3fb"
+text = "#0f2d5c"
+
+[colors.normal]
+black = "#0f2d5c"
+red = "#b8392b"
+green = "#1c7a52"
+yellow = "#8a6100"
+blue = "#1b6fd1"
+magenta = "#6b4fc4"
+cyan = "#0e7fa8"
+white = "#c3d4ee"
+
+[colors.bright]
+black = "#5878a6"
+red = "#d2503f"
+green = "#23946a"
+yellow = "#a87a10"
+blue = "#3f8ae6"
+magenta = "#8569d8"
+cyan = "#1597c4"
+white = "#ffffff"

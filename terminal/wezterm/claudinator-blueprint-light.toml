@@ -1,0 +1,13 @@
+[colors]
+foreground = "#0f2d5c"
+background = "#f4f8ff"
+cursor_bg = "#1b6fd1"
+cursor_border = "#1b6fd1"
+cursor_fg = "#f4f8ff"
+selection_bg = "#d3e3fb"
+selection_fg = "#0f2d5c"
+ansi = ["#0f2d5c", "#b8392b", "#1c7a52", "#8a6100", "#1b6fd1", "#6b4fc4", "#0e7fa8", "#c3d4ee"]
+brights = ["#5878a6", "#d2503f", "#23946a", "#a87a10", "#3f8ae6", "#8569d8", "#1597c4", "#ffffff"]
+
+[metadata]
+name = "Claudinator Blueprint Light"
