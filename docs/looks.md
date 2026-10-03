@@ -52,12 +52,6 @@ Every turn is a technical drawing. Tool calls are dimension lines, edits get cal
 
 Defaults: Mini diffs, Headlines.
 
-## 7 · Thermal
-
-![Thermal](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.0.0/look-thermal.gif)
-
-Each turn prints like a shop receipt: tool calls are line items priced in seconds, then the total, the files changed, the context used, a barcode and a tear-off line.
-
 ## Off
 
 Claude Code draws everything itself. Claudinator stays loaded but draws nothing.

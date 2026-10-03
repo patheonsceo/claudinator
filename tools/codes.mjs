@@ -9,7 +9,6 @@ export const DEFAULT_CODES = {
   prism: 'PR-46D',
   sumi: 'SU-418',
   blueprint: 'BP-4JN',
-  thermal: 'TH-40N',
 }
 
 /** Each look with every visual ingredient on (Mini diffs, File colors, Headlines, Time strip) and Recency fade off. */
@@ -20,5 +19,4 @@ export const SHOWCASE_CODES = {
   prism: 'PR-6P5',
   sumi: 'SU-6P5',
   blueprint: 'BP-6PS',
-  thermal: 'TH-6PK',
 }

@@ -11,7 +11,6 @@ const LOOK_CODES: Record<LookId, string> = {
   prism: 'PR',
   sumi: 'SU',
   blueprint: 'BP',
-  thermal: 'TH',
   off: 'OF',
 }
 const DIGITS = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'

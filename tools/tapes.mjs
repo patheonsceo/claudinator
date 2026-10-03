@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 
 import { DEFAULT_CODES } from './codes.mjs'
 
-const LOOKS = ['hairline', 'broadsheet', 'mission', 'prism', 'sumi', 'blueprint', 'thermal']
+const LOOKS = ['hairline', 'broadsheet', 'mission', 'prism', 'sumi', 'blueprint']
 
 /** Text each look's receipt shows once turn n has finished; recordings wait for it. */
 export const RECEIPT = {
@@ -20,7 +20,6 @@ export const RECEIPT = {
   prism: n => `turn ${n}`,
   sumi: () => '━━━',
   blueprint: n => `DWG T-0${n}`,
-  thermal: () => 'TOTAL',
 }
 
 const FIX = 'Fix total() in src/cart.js so it counts item.qty, then run node --test.'

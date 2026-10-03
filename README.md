@@ -1,8 +1,8 @@
 # Claudinator
 
-**Give Claude Code a glow-up.** Claudinator restyles the parts of Claude Code you look at all day: tool calls, the thinking line, the line that closes each turn, and the prompt rows. Pick one of seven **looks**, mix in **ingredients**, and every change applies live to the session in front of you. Panes let you jump around long sessions, and a share code carries your exact setup to a friend.
+**Give Claude Code a glow-up.** Claudinator restyles the parts of Claude Code you look at all day: tool calls, the thinking line, the line that closes each turn, and the prompt rows. Pick one of six **looks**, mix in **ingredients**, and every change applies live to the session in front of you. Panes let you jump around long sessions, and a share code carries your exact setup to a friend.
 
-![One session switching through all seven looks](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.0.0/hero.gif)
+![One session switching through all six looks](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.0.0/hero.gif)
 
 ## Install
 
@@ -18,7 +18,7 @@ Requires Claude Code v2.1.287 or later. Fullscreen mode (`CLAUDE_CODE_NO_FLICKER
 ## Try it
 
 - **Watch a turn.** Ask Claude to fix something and run the tests. Each step is one considered row, edits show their changed lines, and the turn closes with a receipt.
-- **Switch looks live.** Type `/claudinator` and press `1` to `7`. Your whole session redraws in each look.
+- **Switch looks live.** Type `/claudinator` and press `1` to `6`. Your whole session redraws in each look.
 - **Read a long session like a story.** Type `/look storyteller`: Broadsheet with headlines and footnotes, so Claude's prose reads cleanly and the tool calls sit in numbered notes.
 - **Find your way back.** Type `/chapters` to see every turn by its headline, and press Enter on one to jump to it.
 - **Share your setup.** Type `/look share` and send the code. Your friend types `/look use` and the code.
@@ -33,7 +33,6 @@ Requires Claude Code v2.1.287 or later. Fullscreen mode (`CLAUDE_CODE_NO_FLICKER
 | 4 | **Prism** | Premium color: every file its own color, tool chips, and a fingerprint ribbon closing each turn. |
 | 5 | **Sumi** | Ink and negative space: reads become a quiet trace, only edits get a mark. |
 | 6 | **Blueprint** | Every turn a technical drawing, with callouts and a title block. The `-inator mode` skin. |
-| 7 | **Thermal** | Each turn prints like a shop receipt, barcode and tear-off line included. |
 
 Each look also ships a matching **Claude Code theme** and **terminal color schemes** for Ghostty, kitty, WezTerm, Alacritty, Windows Terminal and iTerm2. See [docs/looks.md](docs/looks.md) for a GIF of each and [docs/themes.md](docs/themes.md) to install the themes.
 

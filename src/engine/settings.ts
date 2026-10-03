@@ -4,7 +4,7 @@ export type { IngredientId, LookId } from '../../types'
 
 export type Settings = ClaudinatorSettings
 
-export const LOOK_IDS: readonly LookId[] = ['hairline', 'broadsheet', 'mission', 'prism', 'sumi', 'blueprint', 'thermal', 'off']
+export const LOOK_IDS: readonly LookId[] = ['hairline', 'broadsheet', 'mission', 'prism', 'sumi', 'blueprint', 'off']
 
 export const INGREDIENT_IDS: readonly IngredientId[] = ['recency', 'miniDiffs', 'fileColors', 'quiet', 'headlines', 'footnotes', 'timeStrip', 'attention', 'inator']
 
@@ -37,7 +37,6 @@ export const LOOK_DEFAULTS: Record<LookId, Partial<Record<IngredientId, boolean>
   prism: { fileColors: true, miniDiffs: true },
   sumi: { recency: true },
   blueprint: { miniDiffs: true, headlines: true },
-  thermal: {},
   off: {},
 }
 
@@ -48,7 +47,6 @@ export const LOOK_LABELS: Record<LookId, string> = {
   prism: 'Prism',
   sumi: 'Sumi',
   blueprint: 'Blueprint',
-  thermal: 'Thermal',
   off: 'Off',
 }
 

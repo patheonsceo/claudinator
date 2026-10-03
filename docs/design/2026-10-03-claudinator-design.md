@@ -58,7 +58,8 @@ A look is a complete visual language for every surface Claudinator draws. Seven 
 | **Prism** | Premium color. Tinted chips with rounded half-block ends, each file in its own color. | The fingerprint ribbon at the end of each turn. |
 | **Sumi** | Ink and negative space. Reads shrink to a dot trace; only edits get a mark, one indigo seal. | The ensō that draws itself while Claude thinks. |
 | **Blueprint** | Every turn is a technical drawing: dimension lines, callout letters on edits. | The title block that closes each turn. The natural `-inator mode` skin. |
-| **Thermal** | Each turn prints like a shop receipt: line items priced in seconds, totals, a barcode and a tear-off line. | The receipt, which doubles as the shareable session card. |
+
+A seventh look, Thermal (each turn printed as a shop receipt), was built and then cut before 1.0.0: it did not meet the bar the other six set.
 
 Each look has a dark and a light palette and matches the user's Claude Code theme. Each look also ships a companion **Claude Code theme** (through `experimental.themes`) that recolors the parts a mod cannot touch, such as the prompt box border and dialogs. Using the companion theme is optional.
 
@@ -129,7 +130,7 @@ src/engine/
                           background, gradients, 256-color fallback.
 src/looks/
   look.ts                 The Look interface every look implements.
-  hairline/ … thermal/
+  hairline/ … blueprint/
 src/ingredients/          One file per ingredient: a pure transform applied by
                           the engine before or after the look draws a row.
 src/panes/                picker.ts, chapters.ts, ledger.ts, pins.ts
@@ -266,7 +267,7 @@ README.md  CHANGELOG.md  CONTRIBUTING.md  SECURITY.md  LICENSE
 | **0.1.0** | Foundation | Engine, settings and `$.state`, the picker, the **Hairline** look on every surface, ingredients **Recency fade**, **Mini diffs**, **File colors** and **Quiet**, Desktop and classic fallbacks, tests, CI, the marketplace, the GIF pipeline and the first GIFs. |
 | **0.2.0** | Navigation | **Chapters**, **Ledger** and **Pins** panes; **Headlines** and **Footnotes**. |
 | **0.3.0** | Looks I | **Broadsheet**, **Prism**, **Mission Control** (with **Time strip** and the telemetry band). |
-| **0.4.0** | Looks II | **Sumi**, **Blueprint**, **Thermal**, and **-inator mode**. |
+| **0.4.0** | Looks II | **Sumi**, **Blueprint** and **-inator mode** (Thermal was cut). |
 | **0.5.0** | Attention and sharing | The **attention ladder** with opt-in sound and notifications, **combos**, and **share codes**. |
 | **1.0.0** | Polish and listing | Companion themes for every look, full docs, a performance pass, and the directory submission. |
 
