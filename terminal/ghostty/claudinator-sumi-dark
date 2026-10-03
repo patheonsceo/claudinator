@@ -1,0 +1,22 @@
+# Claudinator Sumi Dark
+palette = 0=#1a1a1b
+palette = 1=#c98a80
+palette = 2=#a9b8a0
+palette = 3=#c9b98e
+palette = 4=#8aa4e0
+palette = 5=#a99abf
+palette = 6=#93afac
+palette = 7=#c9c5be
+palette = 8=#4a4845
+palette = 9=#d9a197
+palette = 10=#bccab3
+palette = 11=#d9cba4
+palette = 12=#a5b9e8
+palette = 13=#bdb0cf
+palette = 14=#aac2bf
+palette = 15=#f4f1ec
+background = #0e0e0f
+foreground = #e9e6e1
+cursor-color = #8aa4e0
+selection-background = #26282e
+selection-foreground = #e9e6e1

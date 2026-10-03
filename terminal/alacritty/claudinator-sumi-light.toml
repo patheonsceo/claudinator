@@ -1,0 +1,32 @@
+# Claudinator Sumi Light
+[colors.primary]
+background = "#f4f3f0"
+foreground = "#1b1a18"
+
+[colors.cursor]
+cursor = "#2d4f9e"
+text = "#f4f3f0"
+
+[colors.selection]
+background = "#d8dceb"
+text = "#1b1a18"
+
+[colors.normal]
+black = "#2a2926"
+red = "#a8453a"
+green = "#56704a"
+yellow = "#87692c"
+blue = "#2d4f9e"
+magenta = "#6b5384"
+cyan = "#3f6d69"
+white = "#d9d6cf"
+
+[colors.bright]
+black = "#7a7771"
+red = "#bd5d51"
+green = "#6b865e"
+yellow = "#a0823f"
+blue = "#4a69b4"
+magenta = "#836c9c"
+cyan = "#568581"
+white = "#ffffff"

@@ -1,0 +1,22 @@
+# Claudinator Sumi Light
+palette = 0=#2a2926
+palette = 1=#a8453a
+palette = 2=#56704a
+palette = 3=#87692c
+palette = 4=#2d4f9e
+palette = 5=#6b5384
+palette = 6=#3f6d69
+palette = 7=#d9d6cf
+palette = 8=#7a7771
+palette = 9=#bd5d51
+palette = 10=#6b865e
+palette = 11=#a0823f
+palette = 12=#4a69b4
+palette = 13=#836c9c
+palette = 14=#568581
+palette = 15=#ffffff
+background = #f4f3f0
+foreground = #1b1a18
+cursor-color = #2d4f9e
+selection-background = #d8dceb
+selection-foreground = #1b1a18
