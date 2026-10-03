@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { INGREDIENT_HOTKEYS, INGREDIENT_IDS, LOOK_IDS, layerOf, resolveSettings } from '../src/engine/settings'
+import { INGREDIENT_HOTKEYS, INGREDIENT_IDS, LOOK_IDS, layerOf, projectLayerOf, resolveSettings } from '../src/engine/settings'
 
 describe('settings for every look', () => {
   test('seven looks and Off, in picker order', async () => {
@@ -17,6 +17,14 @@ describe('settings for every look', () => {
     expect(resolveSettings([{ look: 'mission' }]).ingredients.timeStrip).toBe(true)
     expect(resolveSettings([{ look: 'prism' }]).ingredients.fileColors).toBe(true)
     expect(resolveSettings([{ look: 'hairline' }]).ingredients).toMatchObject({ recency: true, miniDiffs: true, headlines: false })
+  })
+
+  test('a look chosen by a project file does not bring ingredients that hide rows', async () => {
+    const fromProject = resolveSettings([projectLayerOf({ look: 'broadsheet' })])
+    expect(fromProject.look).toBe('broadsheet')
+    expect(fromProject.ingredients.footnotes).toBe(false)
+    expect(fromProject.ingredients.headlines, 'harmless defaults still apply').toBe(true)
+    expect(resolveSettings([projectLayerOf({ look: 'broadsheet' }), { look: 'broadsheet' }]).ingredients.footnotes, 'the user choosing it brings everything').toBe(true)
   })
 
   test("the user's own ingredient choices beat a look's defaults", async () => {
