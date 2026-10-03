@@ -67,3 +67,41 @@ describe('navigator pane', () => {
     expect(textOf(navigatorView(TERMINAL_ELS, HAIRLINE.paneStyle, { ...empty, tab: 'pins' }, noop))).toContain('/pin')
   })
 })
+
+describe('navigator pane, as the lookbook draws it', () => {
+  const noop = { setTab: () => {}, jumpToTurn: () => {}, jumpToTool: () => {}, unpin: () => {} }
+  const node = (tree: unknown, key: string): unknown => {
+    if (tree === null || typeof tree !== 'object') return undefined
+    const t = tree as { props?: Record<string, unknown>; children?: unknown[] }
+    if (t.props?.key === key) return t
+    for (const child of t.children ?? []) {
+      const hit = node(child, key)
+      if (hit) return hit
+    }
+    return undefined
+  }
+
+  test('each chapter is two lines: its number and title, then its changes and time', async () => {
+    const tree = navigatorView(TERMINAL_ELS, HAIRLINE.paneStyle, { ...data, columns: 44 }, noop)
+    const first = node(tree, 'entry-chapter-1') as { children: unknown[] }
+    expect(first.children.length).toBe(2)
+    expect(textOf(first.children[0])).toContain('Fixed the cart')
+    expect(textOf(first.children[1])).toMatch(/\+2.*−1.*12s/)
+    const running = node(tree, 'entry-chapter-2') as { children: unknown[] }
+    expect(textOf(running.children[1])).toContain('running')
+  })
+
+  test('the open tab is underlined, and each tab ends with a hint line', async () => {
+    const tree = navigatorView(TERMINAL_ELS, HAIRLINE.paneStyle, { ...data, columns: 44 }, noop)
+    expect(textOf(node(tree, 'tab-rule'))).toContain('━')
+    expect(textOf(tree)).toContain('⏎ jump')
+    expect(textOf(navigatorView(TERMINAL_ELS, HAIRLINE.paneStyle, { ...data, tab: 'ledger', columns: 44 }, noop))).toContain('⏎')
+  })
+
+  test('a ledger file shows its path, then its counts and the turns that changed it', async () => {
+    const tree = navigatorView(TERMINAL_ELS, HAIRLINE.paneStyle, { ...data, tab: 'ledger', columns: 44 }, noop)
+    const entry = node(tree, 'entry-file-0') as { children: unknown[] }
+    expect(textOf(entry.children[0])).toContain('src/cart.js')
+    expect(textOf(entry.children[1])).toMatch(/\+3.*−1.*turns 1, 2/)
+  })
+})

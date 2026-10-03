@@ -419,7 +419,7 @@ export const register: Register = (on, opts) => {
     return navigatorView(
       $.ui.resolve(e),
       style,
-      { tab: navTab, cwd, turns: model.turns, ledger: Model.ledgerOf(model), pins },
+      { tab: navTab, cwd, turns: model.turns, ledger: Model.ledgerOf(model), pins, columns: e.props.bodyColumns },
       {
         setTab: tab => {
           navTab = tab
