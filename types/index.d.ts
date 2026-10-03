@@ -4,11 +4,16 @@
 // `declare module 'claude-code'` block below, a bare `Settings` would resolve
 // to Claude Code's own exported Settings type.
 
-export type LookId = 'hairline' | 'off'
+export type LookId = 'hairline' | 'broadsheet' | 'mission' | 'prism' | 'sumi' | 'blueprint' | 'thermal' | 'off'
 
-export type IngredientId = 'recency' | 'miniDiffs' | 'fileColors' | 'quiet'
+export type IngredientId = 'recency' | 'miniDiffs' | 'fileColors' | 'quiet' | 'headlines' | 'footnotes' | 'timeStrip' | 'attention' | 'inator'
 
-export type ClaudinatorSettings = { version: 1; look: LookId; ingredients: Record<IngredientId, boolean> }
+export type ClaudinatorSettings = {
+  version: 1
+  look: LookId
+  ingredients: Record<IngredientId, boolean>
+  attention: { sound: boolean; notify: boolean }
+}
 
 declare module 'claude-code' {
   interface PluginState {

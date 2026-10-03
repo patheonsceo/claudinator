@@ -1,6 +1,21 @@
 import { changeOf, isChangeTool } from './tool-facts'
 
-export type TurnStats = { turn: number; files: string[]; add: number; del: number; contextPercent?: number }
+export type FileChange = { file: string; add: number; del: number }
+
+export type TurnStats = {
+  turn: number
+  files: string[]
+  add: number
+  del: number
+  contextPercent?: number
+  /** Lines changed per file, in the order the files were first changed. */
+  byFile?: FileChange[]
+  /** Tool calls in the turn, and the time they took (calls that waited on a prompt excluded). */
+  toolCount?: number
+  toolsMs?: number
+  /** Time spent on calls that waited for the user's permission. */
+  waitingMs?: number
+}
 export type Running = { tool: string; input: unknown; startedAt: number }
 
 /**

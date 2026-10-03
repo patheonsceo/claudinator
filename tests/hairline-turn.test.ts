@@ -3,6 +3,8 @@ import { describe, expect, test } from 'claude-code/testing'
 import { live, liveFrames, liveStateOf, pulseCells } from '../src/looks/hairline/live'
 import { receipt, userMessage } from '../src/looks/hairline/turn'
 import { LOOKS } from '../src/looks'
+import { HAIRLINE } from '../src/looks/hairline'
+import { DEFAULT_SETTINGS } from '../src/engine/settings'
 import { DESKTOP_ELS, ctxOf, textOf } from './fixtures'
 
 describe('hairline turn pieces', () => {
@@ -17,7 +19,7 @@ describe('hairline turn pieces', () => {
   })
 
   test('the receipt sums up the turn', async () => {
-    const text = textOf(receipt({ durationMs: 134_000, stats: { turn: 7, files: ['/w/a.ts', '/w/b.ts'], add: 103, del: 10, contextPercent: 41.2 } }, ctxOf()))
+    const text = textOf(receipt({ durationMs: 134_000, stats: { turn: 7, files: ['/w/a.ts', '/w/b.ts'], add: 103, del: 10, contextPercent: 41.2 }, notes: [], timeStrip: null }, ctxOf()))
     expect(text).toContain('Turn 7')
     expect(text).toContain('2m 14s')
     expect(text).toContain('2 files')
@@ -27,14 +29,44 @@ describe('hairline turn pieces', () => {
   })
 
   test('the receipt keeps its stats on one line and clips the rule instead of an ellipsis', async () => {
-    const tree = JSON.stringify(receipt({ durationMs: 24_000, stats: { turn: 1, files: ['/w/a.ts'], add: 1, del: 1, contextPercent: 22 } }, ctxOf({ columns: 94 })))
+    const tree = JSON.stringify(receipt({ durationMs: 24_000, stats: { turn: 1, files: ['/w/a.ts'], add: 1, del: 1, contextPercent: 22 }, notes: [], timeStrip: null }, ctxOf({ columns: 94 })))
     expect(tree, 'the stats never shrink').toContain('"flexShrink":0')
     expect(tree, 'the rule is clipped').toContain('"overflow":"hidden"')
     expect(tree, 'no ellipsis at the end of the rule').not.toContain('"wrap":"truncate"')
   })
 
+  test('the headline names the turn above its prompt', async () => {
+    const text = textOf(HAIRLINE.headline({ turn: 7, title: 'The refresh race, fixed' }, ctxOf()))
+    expect(text).toContain('Turn 7')
+    expect(text).toContain('The refresh race, fixed')
+  })
+
+  test('the receipt carries the turn footnotes above and the time strip below', async () => {
+    const text = textOf(HAIRLINE.receipt({
+      durationMs: 9_000,
+      stats: { turn: 2, files: [], add: 0, del: 0 },
+      notes: [{ n: 1, tool: 'Read', input: { file_path: '/work/a.ts' }, durationMs: 100 }],
+      timeStrip: { thinkingMs: 6_000, toolsMs: 2_000, waitingMs: 1_000 },
+    }, ctxOf()))
+    expect(text.indexOf('¹')).toBeLessThan(text.indexOf('Turn 2'))
+    expect(text).toContain('Read a.ts · 0.1s')
+    expect(text).toContain('thinking 6.0s')
+    expect(text).toContain('waiting on you 1.0s')
+  })
+
+  test('-inator mode changes the live word and the receipt', async () => {
+    const inator = { ...DEFAULT_SETTINGS, ingredients: { ...DEFAULT_SETTINGS.ingredients, inator: true } }
+    expect(textOf(live({ mode: 'thinking', detail: '', elapsedMs: 0 }, 0, ctxOf({ surface: 'desktop', settings: inator })))).toContain('Scheming')
+    expect(textOf(HAIRLINE.receipt({ durationMs: 1_000, stats: { turn: 1, files: [], add: 0, del: 0 }, notes: [], timeStrip: null }, ctxOf({ settings: inator })))).toContain('inator')
+  })
+
+  test('Hairline leaves the band to others and dresses panes in its accent', async () => {
+    expect(HAIRLINE.band({ usage: null, waiting: null, isWorking: false }, ctxOf())).toBeNull()
+    expect(HAIRLINE.paneStyle.accent).toBe('suggestion')
+  })
+
   test('a receipt without stats shows its duration only', async () => {
-    const text = textOf(receipt({ durationMs: 9_000, stats: null }, ctxOf()))
+    const text = textOf(receipt({ durationMs: 9_000, stats: null, notes: [], timeStrip: null }, ctxOf()))
     expect(text).toContain('9.0s')
     expect(text).not.toContain('Turn')
   })

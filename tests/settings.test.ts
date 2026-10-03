@@ -6,30 +6,29 @@ describe('settings', () => {
   test('defaults are Hairline with recency fade and mini diffs', async () => {
     expect(resolveSettings([])).toEqual(DEFAULT_SETTINGS)
     expect(DEFAULT_SETTINGS.look).toBe('hairline')
-    expect(DEFAULT_SETTINGS.ingredients).toEqual({ recency: true, miniDiffs: true, fileColors: false, quiet: false })
+    expect(DEFAULT_SETTINGS.ingredients).toMatchObject({ recency: true, miniDiffs: true, fileColors: false, quiet: false })
   })
 
   test('later layers win, field by field', async () => {
-    const options = optionsLayer({ look: 'off', recency: false })
-    const saved = layerOf({ look: 'hairline', ingredients: { quiet: true } })
+    const options = optionsLayer({ look: 'off', attentionSound: true })
+    const saved = layerOf({ look: 'hairline', ingredients: { quiet: true, recency: false } })
     const project = layerOf({ ingredients: { fileColors: true } })
-    expect(resolveSettings([options, saved, project])).toEqual({
-      version: 1,
-      look: 'hairline',
-      ingredients: { recency: false, miniDiffs: true, fileColors: true, quiet: true },
-    })
+    const s = resolveSettings([options, saved, project])
+    expect(s.look).toBe('hairline')
+    expect(s.ingredients).toMatchObject({ recency: false, miniDiffs: true, fileColors: true, quiet: true })
+    expect(s.attention.sound).toBe(true)
   })
 
   test('garbage, unknown looks and wrong types are ignored', async () => {
     expect(layerOf('nonsense')).toEqual({})
     expect(layerOf(null)).toEqual({})
     expect(layerOf({ look: 'neon', ingredients: { recency: 'yes', quiet: true, extra: true } })).toEqual({ ingredients: { quiet: true } })
-    expect(optionsLayer({ look: 42, miniDiffs: 'true' })).toEqual({})
+    expect(optionsLayer({ look: 42, attentionSound: 'true' })).toEqual({})
   })
 
   test('a project file cannot hide rows: it may not turn on Quiet', async () => {
     expect(projectLayerOf({ look: 'off', ingredients: { quiet: true, fileColors: true } })).toEqual({ look: 'off', ingredients: { fileColors: true } })
-    expect(projectLayerOf({ ingredients: { quiet: true } })).toEqual({})
+    expect(projectLayerOf({ ingredients: { quiet: true, footnotes: true } }), 'footnotes hide rows too').toEqual({})
   })
 
   test('a change touches only the field the user changed', async () => {

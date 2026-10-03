@@ -7,6 +7,7 @@ import type { Cell } from '../../engine/raster'
 import type { Running } from '../../engine/session-model'
 import { factsOf } from '../../engine/tool-facts'
 import type { Ctx, LiveFrame, LiveMode, LiveState } from '../look'
+import { inatorWord } from '../common'
 import { C, grow, txt } from './style'
 
 export const LIVE_WORDS: Record<LiveMode, string> = { thinking: 'Thinking', writing: 'Writing', running: 'Running' }
@@ -42,8 +43,14 @@ export function clockCells(ms: number): string {
   return encodeCells([...clockLabel(ms).padStart(CLOCK_COLUMNS)].map(char => ({ char, fg: LIVE.GRAY })))
 }
 
+function wordOf(state: LiveState, frame: number, isInator: boolean): string {
+  return isInator && state.mode === 'thinking' ? inatorWord(frame) : LIVE_WORDS[state.mode]
+}
+
+/** The live frames to blit; -inator words are swapped in by `live` and kept the same width here. */
 export function liveFrames(state: LiveState, frame: number): LiveFrame[] {
-  const word = LIVE_WORDS[state.mode]
+  // 'Scheming' is as wide as 'Thinking', so the raster keeps its size in -inator mode.
+  const word = state.inator && state.mode === 'thinking' ? 'Scheming' : LIVE_WORDS[state.mode]
   return [
     { key: 'cz-pulse', columns: 4 + word.length, cells: pulseCells(word, frame) },
     { key: 'cz-clock', columns: CLOCK_COLUMNS, cells: clockCells(state.elapsedMs) },
@@ -69,6 +76,6 @@ export function live(state: LiveState, frame: number, ctx: Ctx): RenderElement {
   return els.Box({
     flexDirection: 'row',
     columnGap: 1,
-    children: [txt(flat, C.accent, '•••'), txt(flat, C.text, LIVE_WORDS[state.mode]), detail, txt(flat, C.dim, clockLabel(state.elapsedMs))],
+    children: [txt(flat, C.accent, '•••'), txt(flat, C.text, wordOf(state, frame, ctx.settings.ingredients.inator)), detail, txt(flat, C.dim, clockLabel(state.elapsedMs))],
   })
 }
