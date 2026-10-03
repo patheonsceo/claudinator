@@ -2,6 +2,7 @@ import { describe, expect, test } from 'claude-code/testing'
 
 import { DEFAULT_SETTINGS, toggled } from '../src/engine/settings'
 import { quietLine, toolGroup, toolResult, toolRow } from '../src/looks/hairline/rows'
+import { INDENT } from '../src/looks/hairline/style'
 import type { ToolRow } from '../src/looks/look'
 import { ctxOf, textOf } from './fixtures'
 
@@ -65,16 +66,50 @@ describe('hairline rows', () => {
     expect(tree).not.toContain('"color":"text"')
   })
 
-  test('a group reads as one phrase with its files underneath', async () => {
+  test('a mixed group reads as one phrase under its first verb, its files underneath', async () => {
     const rows = [
       row({ id: 'a', input: { file_path: '/work/a.ts' }, durationMs: 100 }),
       row({ id: 'b', input: { file_path: '/work/b.ts' }, durationMs: 100 }),
       row({ id: 'c', tool: 'Bash', input: { command: 'ls' }, durationMs: 300 }),
     ]
     const text = textOf(toolGroup(rows, ctxOf()))
-    expect(text).toContain('Read 2 files, ran 1 command')
+    expect(text).toContain('Read  ▾ 2 files, ran 1 command')
     expect(text).toContain('a.ts')
     expect(text).toContain('0.5s')
+  })
+
+  test('a folded run of reads names its folder and lists its files at the target column', async () => {
+    const files = ['middleware.ts', 'token-store.ts', 'api-client.ts']
+    const rows = files.map((f, i) => row({ id: `r${i}`, input: { file_path: `/work/src/auth/${f}` }, durationMs: 300 }))
+    const tree = toolGroup(rows, ctxOf())
+    const text = textOf(tree)
+    expect(text).toContain('◇')
+    expect(text).toContain('Read  ')
+    expect(text).toContain('▾ 3 files in src/auth/')
+    expect(text).toContain('middleware.ts · token-store.ts · api-client.ts')
+    expect(JSON.stringify(tree), 'the list starts under the target').toContain(`"paddingLeft":${INDENT}`)
+  })
+
+  test('a group of one draws as the row itself', async () => {
+    const text = textOf(toolGroup([row({ tool: 'Bash', input: { command: 'node --test' }, durationMs: 600 })], ctxOf()))
+    expect(text).toContain('›')
+    expect(text).toContain('Run   ')
+    expect(text).toContain('node --test')
+    expect(text).not.toContain('Ran 1 command')
+  })
+
+  test('a write reads as Create with an accent diamond, and a search shows its pattern quoted', async () => {
+    const write = toolRow(row({ tool: 'Write', input: { file_path: '/work/src/auth/refresh-lock.ts', content: 'a\nb' } }), ctxOf())
+    expect(textOf(write)).toContain('◆Create')
+    expect(JSON.stringify(write)).toContain('"color":"suggestion"},"children":["◆"]')
+    expect(textOf(toolRow(row({ tool: 'Grep', input: { pattern: 'refreshToken' } }), ctxOf()))).toContain('⌕Search"refreshToken"')
+  })
+
+  test('a slow call draws its duration hairline in amber', async () => {
+    const slow = JSON.stringify(toolRow(row({ tool: 'Bash', input: { command: 'pnpm test' }, durationMs: 3_800 }), ctxOf()))
+    const quick = JSON.stringify(toolRow(row({ tool: 'Bash', input: { command: 'ls' }, durationMs: 200 }), ctxOf()))
+    expect(slow).toContain(`"color":"warning"},"children":[" ${'─'.repeat(7)}"]`)
+    expect(quick).not.toContain('"color":"warning"')
   })
 
   test('a long tool name ends in an ellipsis instead of being cut', async () => {
@@ -97,5 +132,23 @@ describe('hairline rows', () => {
     expect(textOf(toolResult({ tool: 'Read', output: {}, isErrored: false }, ctxOf()))).toBe('')
     expect(toolResult({ tool: 'Edit', output: {}, isErrored: false }, ctxOf({ settings: toggled(DEFAULT_SETTINGS, 'miniDiffs') })), 'Claude Code draws the full diff when mini diffs are off').toBeNull()
     expect(toolResult({ tool: 'mcp__x__y', output: {}, isErrored: false }, ctxOf())).toBeNull()
+  })
+
+  test('a passing command shows a check and its telling line under the target', async () => {
+    const tree = toolResult({ tool: 'Bash', output: { stdout: 'running 24 tests\n✓ 24 passed', stderr: '' }, isErrored: false }, ctxOf())
+    expect(textOf(tree)).toBe('✓ 24 passed')
+    expect(JSON.stringify(tree)).toContain('"color":"success"},"children":["✓ "]')
+    expect(JSON.stringify(tree)).toContain(`"paddingLeft":${INDENT}`)
+  })
+
+  test('a failure hangs its first error line under the row and the next one dim beneath', async () => {
+    const output = { stdout: '> app test\n✕ refresh-lock › releases the lock after a timeout\nexpected "released", received "held"\nmore', stderr: '' }
+    const tree = toolResult({ tool: 'Bash', output, isErrored: true }, ctxOf())
+    const json = JSON.stringify(tree)
+    expect(textOf(tree)).toBe('╰ refresh-lock › releases the lock after a timeoutexpected "released", received "held"')
+    expect(json).toContain('"color":"error"},"children":["╰ "]')
+    expect(json).toContain('"color":"inactive","wrap":"truncate-end"},"children":["expected \\"released\\", received \\"held\\""]')
+    expect(json).toContain(`"paddingLeft":${INDENT + 2}`)
+    expect(textOf(toolResult({ tool: 'Read', output: 'File does not exist.', isErrored: true }, ctxOf()))).toBe('╰ File does not exist.')
   })
 })
