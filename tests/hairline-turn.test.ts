@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { live, liveFrames, liveStateOf, pulseCells } from '../src/looks/hairline/live'
+import { TRACE_COLUMNS, live, liveFrames, liveStateOf, pulseCells, traceCells } from '../src/looks/hairline/live'
+import { LIVE } from '../src/engine/palette'
 import { receipt, userMessage } from '../src/looks/hairline/turn'
 import { LOOKS } from '../src/looks'
 import { HAIRLINE } from '../src/looks/hairline'
@@ -25,7 +26,18 @@ describe('hairline turn pieces', () => {
     expect(text).toContain('2 files')
     expect(text).toContain('+103')
     expect(text).toContain('−10')
-    expect(text).toContain('41% ctx')
+    expect(text).toContain('41%')
+  })
+
+  test('the receipt draws context as a ten-cell bar, accent then faint, beside the percent', async () => {
+    const data = { durationMs: 134_000, stats: { turn: 7, files: ['/w/a.ts'], add: 1, del: 0, contextPercent: 41.2 }, notes: [], timeStrip: null }
+    const json = JSON.stringify(receipt(data, ctxOf()))
+    expect(json).toContain('"color":"suggestion"},"children":["────"]')
+    expect(json).toContain('"color":"subtle"},"children":["──────"]')
+    expect(textOf(receipt(data, ctxOf()))).toContain('──────────41% ctx')
+    const narrow = textOf(receipt(data, ctxOf({ columns: 60 })))
+    expect(narrow, 'narrow terminals keep the plain percent').toContain('41% ctx')
+    expect(narrow).not.toContain('──────────41% ctx')
   })
 
   test('the receipt keeps its stats on one line and clips the rule instead of an ellipsis', async () => {
@@ -84,16 +96,66 @@ describe('hairline turn pieces', () => {
     expect(liveStateOf('requesting', undefined, 0, '/work', 'Retrying in 8s (attempt 2/10)').detail).toBe('Retrying in 8s (attempt 2/10)')
   })
 
-  test('the terminal live line animates through rasters', async () => {
-    const state = { mode: 'thinking' as const, detail: '', elapsedMs: 42_000 }
-    const tree = JSON.stringify(live(state, 3, ctxOf()))
-    expect(tree).toContain('"key":"cz-pulse"')
-    expect(tree).toContain('"key":"cz-clock"')
+  test('the thinking line is breathing dots and a shimmering word, the detail, a sliding trace and the clock', async () => {
+    const state = { mode: 'thinking' as const, detail: 'tracing the lock timeout path', elapsedMs: 42_000 }
+    const tree = live(state, 3, ctxOf())
+    const json = JSON.stringify(tree)
+    expect(json).toContain('"key":"cz-pulse"')
+    expect(json).toContain('"key":"cz-trace"')
+    expect(json).toContain('"key":"cz-clock"')
+    expect(textOf(tree)).toContain('· tracing the lock timeout path')
     const frames = liveFrames(state, 4)
-    expect(frames.map(f => f.key)).toEqual(['cz-pulse', 'cz-clock'])
+    expect(frames.map(f => f.key)).toEqual(['cz-pulse', 'cz-trace', 'cz-clock'])
     expect(frames[0]?.columns).toBe(4 + 'Thinking'.length)
-    expect(pulseCells('Thinking', 0), 'the dots step every third frame').not.toBe(pulseCells('Thinking', 3))
+    expect(frames[1]?.columns).toBe(TRACE_COLUMNS)
+    expect(pulseCells('Thinking', 0), 'the dots breathe').not.toBe(pulseCells('Thinking', 3))
     expect(pulseCells('Thinking', 5), 'the sweep crosses the word').not.toBe(pulseCells('Thinking', 4))
+  })
+
+  test('the trace is sixteen en dashes with a five-cell accent segment sliding along it', async () => {
+    expect(TRACE_COLUMNS).toBe(16)
+    for (let f = 0; f < 30; f++) {
+      const cells = traceCells(f)
+      expect(cells.length).toBe(16)
+      expect(cells.every(c => c.char === '–')).toBe(true)
+      expect(cells.filter(c => c.fg === LIVE.ACCENT).length).toBeLessThanOrEqual(5)
+    }
+    expect(traceCells(8).filter(c => c.fg === LIVE.ACCENT).length).toBe(5)
+    const lit = (f: number) => traceCells(f).findIndex(c => c.fg === LIVE.ACCENT)
+    expect(lit(9), 'the segment moves right').toBe(lit(8) + 1)
+  })
+
+  test('the running line names the step once, then its target, the trace and the clock', async () => {
+    const state = { mode: 'running' as const, detail: 'pnpm test auth', activity: 'Running', elapsedMs: 3_100 }
+    const tree = live(state, 0, ctxOf())
+    const text = textOf(tree)
+    expect(text).toContain('›Runningpnpm test auth')
+    expect(text.match(/Run/g)?.length, 'the verb is never printed twice').toBe(1)
+    expect(liveFrames(state, 0).map(f => f.key)).toEqual(['cz-trace', 'cz-clock'])
+    expect(JSON.stringify(tree)).toContain('"key":"cz-trace"')
+    expect(textOf(live({ mode: 'running', detail: 'src/a.ts', activity: 'Reading', elapsedMs: 0 }, 0, ctxOf()))).toContain('›Readingsrc/a.ts')
+  })
+
+  test('every live state keeps its frames the same size for 30 frames', async () => {
+    const states = [
+      { mode: 'thinking' as const, detail: '', elapsedMs: 0 },
+      { mode: 'thinking' as const, detail: '', elapsedMs: 0, inator: true },
+      { mode: 'writing' as const, detail: '', elapsedMs: 0 },
+      { mode: 'running' as const, detail: 'ls', activity: 'Running', elapsedMs: 0 },
+    ]
+    for (const state of states) {
+      const first = liveFrames(state, 0)
+      for (let f = 0; f < 30 * 40; f += 40) {
+        const frames = liveFrames({ ...state, elapsedMs: f * 100 }, f)
+        expect(frames.map(x => [x.key, x.columns])).toEqual(first.map(x => [x.key, x.columns]))
+        expect(frames.map(x => x.cells.length)).toEqual(first.map(x => x.cells.length))
+      }
+    }
+  })
+
+  test('the writing line uses its own word', async () => {
+    expect(textOf(live({ mode: 'writing', detail: '', elapsedMs: 0 }, 0, ctxOf({ surface: 'desktop', els: DESKTOP_ELS })))).toContain('Writing')
+    expect(liveFrames({ mode: 'writing', detail: '', elapsedMs: 0 }, 0)[0]?.columns).toBe(4 + 'Writing'.length)
   })
 
   test('the desktop live line is plain text with no raster', async () => {
