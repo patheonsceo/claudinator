@@ -11,7 +11,7 @@ import { clockCells as hairlineClock } from '../src/looks/hairline/live'
 import { clockCells as prismClock } from '../src/looks/prism/live'
 import { factsOf, isFootnotable } from '../src/engine/tool-facts'
 import { withMarks } from '../src/looks/common'
-import { SESSION, assistantInput, ctxOf, startsSession, textOf, toolUseInput, turnDurationInput } from './fixtures'
+import { SESSION, assistantInput, ctxOf, startsSession, textOf, toolGroupInput, toolUseInput, turnDurationInput } from './fixtures'
 
 const read = (file: string) => ({ file_path: file })
 const edit = (file: string) => ({ file_path: file, old_string: 'a', new_string: 'b' })
@@ -304,5 +304,30 @@ describe('one time strip, just above the prompt', () => {
     expect(textOf(await $.ui.render(receiptOf('r2')))).toContain('thinking')
     await $.turn.start({ turnId: 't3', text: 'x' })
     expect(textOf(await $.ui.render(receiptOf('r2')))).not.toContain('thinking')
+  })
+})
+
+describe('room to breathe', () => {
+  test('each tool row and group stands apart, receipts have air on both sides, hidden rows take no space', async ($, on) => {
+    const { saved } = startsSession(on)
+    saved.set('settings', { ingredients: { footnotes: true } })
+    let id = ''
+    on('tool.call', ($, e) => {
+      id = e.tool_use_id
+      return { result: 'ok' }
+    })
+    on('turn.start', ($, e) => ({ turnId: e.turnId }))
+    on('turn.complete', () => ({ text: '' }))
+    await $.session.start(SESSION)
+    const props = (tree: unknown) => (tree as { props?: Record<string, unknown> }).props ?? {}
+    expect(props(await $.ui.render(toolUseInput('Edit', { file_path: '/work/a.ts', old_string: 'a', new_string: 'b' }))).marginTop).toBe(1)
+    expect(props(await $.ui.render(toolGroupInput([{ tool: 'Read', input: { file_path: '/work/a.ts' } }, { tool: 'Read', input: { file_path: '/work/b.ts' } }]))).marginTop).toBe(1)
+    await $.turn.start({ turnId: 't1', text: 'look' })
+    await $.tool.call({ tool: 'Read', file_path: '/work/src/cart.js' })
+    expect(props(await $.ui.render(toolUseInput('Read', { file_path: '/work/src/cart.js' }, { tool_use_id: id }))).marginTop).toBeUndefined()
+    await $.turn.complete({ turnId: 't1', durationMs: 4_000, answer: 'Done.', isAborted: false, reason: 'answer' })
+    const receipt = props(await $.ui.render(turnDurationInput(4_000)))
+    expect(receipt.marginTop).toBe(1)
+    expect(receipt.marginBottom).toBe(1)
   })
 })
