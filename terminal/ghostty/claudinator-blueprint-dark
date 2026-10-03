@@ -1,0 +1,22 @@
+# Claudinator Blueprint Dark
+palette = 0=#13305a
+palette = 1=#ff9a8a
+palette = 2=#8ff0c0
+palette = 3=#ffe08a
+palette = 4=#6fa8ff
+palette = 5=#c6a8ff
+palette = 6=#7fd4ff
+palette = 7=#c9dbf5
+palette = 8=#3d6599
+palette = 9=#ffb8ab
+palette = 10=#b5f7d6
+palette = 11=#fff0b8
+palette = 12=#9cc4ff
+palette = 13=#dcc8ff
+palette = 14=#a8e4ff
+palette = 15=#ffffff
+background = #0a2240
+foreground = #e6f0ff
+cursor-color = #7fd4ff
+selection-background = #1d4170
+selection-foreground = #ffffff

@@ -1,0 +1,23 @@
+{
+  "name": "Claudinator Blueprint Light",
+  "background": "#f4f8ff",
+  "foreground": "#0f2d5c",
+  "cursorColor": "#1b6fd1",
+  "selectionBackground": "#d3e3fb",
+  "black": "#0f2d5c",
+  "red": "#b8392b",
+  "green": "#1c7a52",
+  "yellow": "#8a6100",
+  "blue": "#1b6fd1",
+  "purple": "#6b4fc4",
+  "cyan": "#0e7fa8",
+  "white": "#c3d4ee",
+  "brightBlack": "#5878a6",
+  "brightRed": "#d2503f",
+  "brightGreen": "#23946a",
+  "brightYellow": "#a87a10",
+  "brightBlue": "#3f8ae6",
+  "brightPurple": "#8569d8",
+  "brightCyan": "#1597c4",
+  "brightWhite": "#ffffff"
+}

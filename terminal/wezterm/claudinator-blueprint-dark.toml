@@ -1,0 +1,13 @@
+[colors]
+foreground = "#e6f0ff"
+background = "#0a2240"
+cursor_bg = "#7fd4ff"
+cursor_border = "#7fd4ff"
+cursor_fg = "#0a2240"
+selection_bg = "#1d4170"
+selection_fg = "#ffffff"
+ansi = ["#13305a", "#ff9a8a", "#8ff0c0", "#ffe08a", "#6fa8ff", "#c6a8ff", "#7fd4ff", "#c9dbf5"]
+brights = ["#3d6599", "#ffb8ab", "#b5f7d6", "#fff0b8", "#9cc4ff", "#dcc8ff", "#a8e4ff", "#ffffff"]
+
+[metadata]
+name = "Claudinator Blueprint Dark"
