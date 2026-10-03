@@ -10,7 +10,8 @@ Sleep 800ms
 Enter
 Sleep 1s
 Type "Fix total() in src/cart.js so it counts item.qty, then run node --test." Enter
-Sleep 40s
+Wait+Screen@120s /Turn 1/
+Sleep 1s
 Show
 Sleep 2s
 Type "/claudinator"
