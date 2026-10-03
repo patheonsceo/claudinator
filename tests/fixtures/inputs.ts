@@ -46,3 +46,19 @@ export function spinnerInput(mode: string, surface: 'terminal' | 'desktop' = 'te
 }
 
 export const PICKER_PROPS = { title: 'Claudinator', isFocused: true, bodyColumns: 60, placement: 'dock' as const, scroll: { offset: 0, bodyRows: 30 }, view: {} }
+
+export function assistantInput(requestId: string, text: string): RenderInput<'AssistantMessage'> {
+  return { component: 'AssistantMessage', surface: 'terminal', requestId, viewport: VIEWPORT, props: { text, isFirstOfReply: true } } as RenderInput<'AssistantMessage'>
+}
+
+export function bandInput(): RenderInput<'AbovePrompt'> {
+  return {
+    component: 'AbovePrompt',
+    surface: 'terminal',
+    requestId: 'band',
+    viewport: VIEWPORT,
+    props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 120, scroll: { offset: 0, bodyRows: 10 }, view: {} },
+  } as RenderInput<'AbovePrompt'>
+}
+
+export const NAVIGATOR_PROPS = PICKER_PROPS

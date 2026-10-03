@@ -4,8 +4,8 @@ import { DEFAULT_SETTINGS } from '../src/engine/settings'
 import { pickerView } from '../src/panes/picker'
 import { TERMINAL_ELS, textOf } from './fixtures'
 
-const info = { isFullscreen: true, hasProjectFile: false }
-const noop = { setLook: () => {}, toggle: () => {} }
+const info = { isFullscreen: true, hasProjectFile: false, shareCode: 'HL-1F3' }
+const noop = { setLook: () => {}, toggle: () => {}, applyCombo: () => {} }
 
 function find(tree: unknown, key: string): Record<string, unknown> | undefined {
   if (tree === null || typeof tree !== 'object') return undefined
@@ -29,7 +29,7 @@ describe('picker', () => {
 
   test('buttons call back with what they change', async () => {
     const calls: string[] = []
-    const tree = pickerView(TERMINAL_ELS, DEFAULT_SETTINGS, info, { setLook: id => calls.push(`look:${id}`), toggle: id => calls.push(`toggle:${id}`) })
+    const tree = pickerView(TERMINAL_ELS, DEFAULT_SETTINGS, info, { ...noop, setLook: id => calls.push(`look:${id}`), toggle: id => calls.push(`toggle:${id}`) })
     const off = find(tree, 'look-off')
     const quiet = find(tree, 'ingredient-quiet')
     ;(off?.onPress as () => void)()
@@ -37,6 +37,21 @@ describe('picker', () => {
     expect(calls).toEqual(['look:off', 'toggle:quiet'])
     expect(off?.hotkey).toBe('8')
     expect(quiet?.hotkey).toBe('q')
+  })
+
+  test('every look and every ingredient is there', async () => {
+    const text = textOf(pickerView(TERMINAL_ELS, DEFAULT_SETTINGS, info, noop))
+    for (const label of ['Hairline', 'Broadsheet', 'Mission Control', 'Prism', 'Sumi', 'Blueprint', 'Thermal', 'Off']) expect(text).toContain(label)
+    for (const label of ['Headlines', 'Footnotes', 'Time strip', 'Attention ladder', '-inator mode']) expect(text).toContain(label)
+  })
+
+  test('combos apply a whole setup, and the share code is shown', async () => {
+    const applied: string[] = []
+    const tree = pickerView(TERMINAL_ELS, DEFAULT_SETTINGS, info, { ...noop, applyCombo: id => applied.push(id) })
+    ;(find(tree, 'combo-doof')?.onPress as () => void)()
+    expect(applied).toEqual(['doof'])
+    expect(find(tree, 'combo-doof')?.hotkey).toBe('x')
+    expect(textOf(tree)).toContain('HL-1F3')
   })
 
   test('the footer explains the classic layout', async () => {
