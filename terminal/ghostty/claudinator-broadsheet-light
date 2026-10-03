@@ -1,0 +1,22 @@
+# Claudinator Broadsheet Light
+palette = 0=#25221d
+palette = 1=#b2432c
+palette = 2=#4d7a2b
+palette = 3=#94680f
+palette = 4=#3b5f8a
+palette = 5=#8e4766
+palette = 6=#2f6f68
+palette = 7=#dad5cc
+palette = 8=#77716a
+palette = 9=#c85a42
+palette = 10=#5f9135
+palette = 11=#b0832a
+palette = 12=#4f75a3
+palette = 13=#a75b7d
+palette = 14=#3c8880
+palette = 15=#ffffff
+background = #f7f6f3
+foreground = #25221d
+cursor-color = #94680f
+selection-background = #ebe1cb
+selection-foreground = #25221d

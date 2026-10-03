@@ -1,0 +1,32 @@
+# Claudinator Broadsheet Dark
+[colors.primary]
+background = "#14120f"
+foreground = "#ece5d8"
+
+[colors.cursor]
+cursor = "#e3b65c"
+text = "#14120f"
+
+[colors.selection]
+background = "#3a3226"
+text = "#ece5d8"
+
+[colors.normal]
+black = "#1f1c17"
+red = "#ef8b73"
+green = "#b3cf8e"
+yellow = "#e3b65c"
+blue = "#8fa8c8"
+magenta = "#d6a3b5"
+cyan = "#8fbfb4"
+white = "#cfc7b8"
+
+[colors.bright]
+black = "#4a443a"
+red = "#f5a893"
+green = "#c8deaa"
+yellow = "#edc983"
+blue = "#aabfdb"
+magenta = "#e3bccb"
+cyan = "#aad2c8"
+white = "#f7f1e6"
