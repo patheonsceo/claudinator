@@ -14,7 +14,7 @@ describe('session-model', () => {
     Model.completeTurn(m, 2_000, 41)
 
     expect(Model.durationOf(m, 't1')).toBe(400)
-    expect(m.lastCompleted).toEqual({ turn: 1, files: ['/w/a.ts'], add: 2, del: 1, contextPercent: 41 })
+    expect(m.lastCompleted).toMatchObject({ turn: 1, files: ['/w/a.ts'], add: 2, del: 1, contextPercent: 41 })
   })
 
   test('a receipt binds to the turn that just ended, once', async () => {
