@@ -1,6 +1,7 @@
 import type { LookId } from '../engine/settings'
 import { BLUEPRINT } from './blueprint'
 import { HAIRLINE } from './hairline'
+import { MISSION } from './mission'
 import { THERMAL } from './thermal'
 import type { Look } from './look'
 
@@ -9,7 +10,7 @@ export const LOOKS: Record<LookId, Look | null> = {
   hairline: HAIRLINE,
   // Wired in as each look lands; until then a look id draws nothing, like Off.
   broadsheet: null,
-  mission: null,
+  mission: MISSION,
   prism: null,
   sumi: null,
   blueprint: BLUEPRINT,
