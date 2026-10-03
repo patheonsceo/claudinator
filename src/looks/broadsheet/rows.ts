@@ -27,8 +27,13 @@ function line(ctx: Ctx, glyph: RenderElement, body: RenderElement[], right: Rend
   })
 }
 
-function failure(row: ToolRow): string {
-  return row.isInterrupted ? ' It was interrupted.' : ' It failed.'
+/**
+ * How a failed call's sentence ends. Alone, a failure hands over to the detail
+ * line under it with a colon; inside a group no detail follows, so it stops.
+ */
+function failure(row: ToolRow, inGroup: boolean): string {
+  if (row.isInterrupted) return ' It was interrupted.'
+  return inGroup ? ' It failed.' : ' It failed:'
 }
 
 /** A change's lines with their shared indentation taken off, so the code sits flush. */
@@ -53,16 +58,16 @@ function diffLine(ctx: Ctx, l: DiffLine): RenderElement {
 }
 
 /** `✎ Edited cart.js in src/`, the counts at the right and, with Mini diffs, a few changed lines below. */
-function changeRow(row: ToolRow, change: Change, ctx: Ctx): RenderElement {
+function changeRow(row: ToolRow, change: Change, ctx: Ctx, inGroup: boolean): RenderElement {
   const failed = row.isErrored || row.isInterrupted
   // The path as factsOf made it printable; change.file is the raw input.
   const { dir, base } = splitPath(factsOf(row.tool, row.input).target, ctx.cwd)
-  const verb = row.tool === 'Write' ? ['Wrote', 'Writing', 'write'] : ['Edited', 'Editing', 'edit']
-  const lead = failed ? `Tried to ${verb[2]} ` : `${row.isRunning ? verb[1] : verb[0]} `
-  const body: RenderElement[] = [it(ctx, failed ? C.err : C.text, lead)]
+  const verb = row.tool === 'Write' ? ['Created', 'Creating', 'create'] : ['Edited', 'Editing', 'edit']
+  // The verb is set upright, as in the lookbook; a failure is all italic, in the error color.
+  const body: RenderElement[] = [failed ? it(ctx, C.err, `Tried to ${verb[2]} `) : txt(ctx, C.text, `${row.isRunning ? verb[1] : verb[0]} `)]
   body.push(base === '' ? it(ctx, failed ? C.err : C.dim, 'a file') : txt(ctx, failed ? C.err : nameColor(ctx, dir + base, C.text), base))
   if (dir !== '') body.push(it(ctx, failed ? C.err : C.dim, ` in ${dir}`))
-  if (failed) body.push(it(ctx, C.err, '.' + failure(row)))
+  if (failed) body.push(it(ctx, C.err, '.' + failure(row, inGroup)))
   else if (row.isRunning) body.push(it(ctx, C.dim, '…'))
   const right: RenderElement[] = []
   if (!failed) {
@@ -77,49 +82,74 @@ function changeRow(row: ToolRow, change: Change, ctx: Ctx): RenderElement {
   return ctx.els.Box({ flexDirection: 'column', children: [head, ...flush(lines).map(l => diffLine(ctx, l))] })
 }
 
-export function toolRow(row: ToolRow, ctx: Ctx): RenderElement {
+function callRow(row: ToolRow, ctx: Ctx, inGroup: boolean): RenderElement {
   const change = isChangeTool(row.tool) ? changeOf(row.tool, row.input) : null
-  if (change) return changeRow(row, change, ctx)
+  if (change) return changeRow(row, change, ctx, inGroup)
   const failed = row.isErrored || row.isInterrupted
   const color = failed ? C.err : C.dim
   const body = sentence(ctx, callSegments(row.tool, row.input, ctx.cwd, row.isRunning && !failed), color)
-  body.push(it(ctx, color, failed ? '.' + failure(row) : row.isRunning ? '…' : '.'))
+  body.push(it(ctx, color, failed ? '.' + failure(row, inGroup) : row.isRunning ? '…' : '.'))
   const right = row.durationMs !== undefined ? [time(ctx, row.durationMs)] : []
   return line(ctx, txt(ctx, color, failed ? '✗' : '↳'), body, right)
 }
 
-export function toolGroup(rows: ToolRow[], ctx: Ctx): RenderElement {
-  // A group of one reads better as that call's own sentence: `Ran ls.`, not `Ran 1 command.`
+export function toolRow(row: ToolRow, ctx: Ctx): RenderElement {
+  return callRow(row, ctx, false)
+}
+
+/** Quiet steps folded into one italic sentence, `↳ Read cart.js and ran 2 commands.`, their summed time at the right. */
+function fold(rows: ToolRow[], ctx: Ctx): RenderElement {
+  // A fold of one reads better as that call's own sentence: `Ran ls.`, not `Ran 1 command.`
   const only = rows.length === 1 ? rows[0] : undefined
-  if (only && !isChangeTool(only.tool)) return toolRow(only, ctx)
-  const failed = rows.filter(r => r.isErrored).length
-  const stopped = rows.some(r => r.isInterrupted)
-  const running = rows.some(r => r.isRunning)
+  if (only) return callRow(only, ctx, true)
   const body = sentence(ctx, groupSegments(rows, ctx.cwd), C.dim)
-  body.push(it(ctx, C.dim, running && failed === 0 && !stopped ? '…' : '.'))
-  if (failed > 0) body.push(it(ctx, C.err, failed === 1 && rows.length > 1 ? ' One failed.' : rows.length === 1 ? ' It failed.' : ` ${failed} failed.`))
-  else if (stopped) body.push(it(ctx, C.err, ' It was interrupted.'))
+  body.push(it(ctx, C.dim, rows.some(r => r.isRunning) ? '…' : '.'))
   const isTimed = rows.length > 0 && rows.every(r => r.durationMs !== undefined)
   const right = isTimed ? [time(ctx, rows.reduce((sum, r) => sum + (r.durationMs ?? 0), 0))] : []
-  return line(ctx, txt(ctx, failed > 0 || stopped ? C.err : C.dim, failed > 0 || stopped ? '✗' : '↳'), body, right)
+  return line(ctx, txt(ctx, C.dim, '↳'), body, right)
+}
+
+/**
+ * A group as the lookbook sets it: quiet steps fold into sentences, while an
+ * edit or a failure breaks out onto its own line, in the order they happened.
+ */
+export function toolGroup(rows: ToolRow[], ctx: Ctx): RenderElement {
+  const lines: RenderElement[] = []
+  let quiet: ToolRow[] = []
+  const flushQuiet = () => {
+    if (quiet.length > 0) lines.push(fold(quiet, ctx))
+    quiet = []
+  }
+  for (const r of rows) {
+    if (r.isErrored || r.isInterrupted || isChangeTool(r.tool)) {
+      flushQuiet()
+      lines.push(callRow(r, ctx, true))
+    } else quiet.push(r)
+  }
+  flushQuiet()
+  if (lines.length === 0) return fold([], ctx)
+  return lines.length === 1 && lines[0] ? lines[0] : ctx.els.Box({ flexDirection: 'column', children: lines })
 }
 
 export function quietLine(hidden: number, ctx: Ctx): RenderElement {
   return ctx.els.Box({ paddingLeft: INDENT, children: it(ctx, C.dim, `(${plural(hidden, 'step')} omitted)`, { wrap: 'truncate-end' }) })
 }
 
-/** A result as an aside under its row: `— Tests: 24 passed`. */
-function aside(ctx: Ctx, color: string, text: string): RenderElement {
-  return ctx.els.Box({ paddingLeft: INDENT, children: ctx.els.Text({ wrap: 'truncate-end', children: [txt(ctx, C.faint, '— '), it(ctx, color, text)] }) })
+/** Columns from the left edge to a detail line: two past the row's sentence, as the lookbook sets it. */
+const DETAIL_INDENT = INDENT + 2
+
+/** A result as a dim italic detail line under its row: `Tests: 24 passed`. */
+function aside(ctx: Ctx, text: string): RenderElement {
+  return ctx.els.Box({ paddingLeft: DETAIL_INDENT, children: it(ctx, C.dim, text, { wrap: 'truncate-end' }) })
 }
 
 /** A result collapsed to its telling line; null leaves Claude Code's drawing. */
 export function toolResult(row: ResultRow, ctx: Ctx): RenderElement | null {
-  if (row.isErrored) return aside(ctx, C.err, errorSummary(row.output) || 'It failed.')
+  if (row.isErrored) return aside(ctx, errorSummary(row.output) || 'no details were given')
   switch (row.tool) {
     case 'Bash': {
       const summary = bashSummary(row.output)
-      return summary === '' ? ctx.els.Box({}) : aside(ctx, C.dim, summary)
+      return summary === '' ? ctx.els.Box({}) : aside(ctx, summary)
     }
     case 'Read':
     case 'Grep':

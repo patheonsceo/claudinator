@@ -58,6 +58,21 @@ function nameSeg(target: string, cwd: string): Seg {
   return { text: base, path: dir + base }
 }
 
+/** The folder every call's path shares, or '' when they differ or have none. */
+function sharedDir(calls: Array<{ tool: string; input: unknown }>, cwd: string): string {
+  const dirs = new Set(calls.map(c => {
+    const facts = factsOf(c.tool, c.input)
+    return facts.isPath && facts.target !== '' ? splitPath(facts.target, cwd).dir : ''
+  }))
+  const [only] = dirs
+  return dirs.size === 1 && only !== undefined ? only : ''
+}
+
+/** `read 5 files in src/auth/` when they share a folder, `read 5 files` when not. */
+function inDir(text: string, dir: string): Seg[] {
+  return [{ text: dir === '' ? text : `${text} in ${dir}` }]
+}
+
 /** One kind of step in a folded group: `read cart.js`, `ran 3 commands`. */
 function clause(glyph: Glyph, calls: Array<{ tool: string; input: unknown }>, cwd: string): Seg[] {
   const n = calls.length
@@ -66,11 +81,11 @@ function clause(glyph: Glyph, calls: Array<{ tool: string; input: unknown }>, cw
   const named = facts !== undefined && facts.target !== ''
   switch (glyph) {
     case 'read':
-      return named ? [{ text: 'read ' }, nameSeg(facts.target, cwd)] : [{ text: `read ${plural(n, 'file')}` }]
+      return named ? [{ text: 'read ' }, nameSeg(facts.target, cwd)] : inDir(`read ${plural(n, 'file')}`, sharedDir(calls, cwd))
     case 'edit':
-      return named ? [{ text: 'edited ' }, nameSeg(facts.target, cwd)] : [{ text: `edited ${plural(n, 'file')}` }]
+      return named ? [{ text: 'edited ' }, nameSeg(facts.target, cwd)] : inDir(`edited ${plural(n, 'file')}`, sharedDir(calls, cwd))
     case 'create':
-      return named ? [{ text: 'wrote ' }, nameSeg(facts.target, cwd)] : [{ text: `wrote ${plural(n, 'file')}` }]
+      return named ? [{ text: 'created ' }, nameSeg(facts.target, cwd)] : inDir(`created ${plural(n, 'file')}`, sharedDir(calls, cwd))
     case 'search':
       if (named) return [{ text: `${only?.tool === 'Glob' ? 'looked for' : 'searched for'} ${quoted(facts.target)}` }]
       return [{ text: `ran ${plural(n, 'search', 'searches')}` }]
@@ -118,12 +133,12 @@ const VERBS: Record<string, [string, string, string]> = {
   Edit: ['Edited', 'Editing', 'a file'],
   MultiEdit: ['Edited', 'Editing', 'a file'],
   NotebookEdit: ['Edited', 'Editing', 'a notebook'],
-  Write: ['Wrote', 'Writing', 'a file'],
+  Write: ['Created', 'Creating', 'a file'],
 }
 
 const QUOTED_TOOLS = new Set(['Grep', 'Glob', 'WebSearch'])
 
-/** One call as a sentence without its stop: `Read src/cart.js`, `Ran npm test`. */
+/** One call as a sentence without its stop: `Read cart.js in src/`, `Ran npm test`. */
 export function callSegments(tool: string, input: unknown, cwd: string, isRunning: boolean): Seg[] {
   if (tool === 'ExitPlanMode') return [{ text: isRunning ? 'Presenting the plan' : 'Presented the plan' }]
   const facts = factsOf(tool, input)
@@ -137,7 +152,8 @@ export function callSegments(tool: string, input: unknown, cwd: string, isRunnin
   if (facts.target === '') return [{ text: `${verb} ${verbs[2]}` }]
   if (facts.isPath) {
     const { dir, base } = splitPath(facts.target, cwd)
-    return [{ text: `${verb} ${dir}` }, { text: base, path: dir + base }]
+    // The file first, its folder after, the way an edit row names them.
+    return [{ text: `${verb} ` }, { text: base, path: dir + base }, ...(dir === '' ? [] : [{ text: ` in ${dir}` }])]
   }
   return [{ text: `${verb} ${QUOTED_TOOLS.has(tool) ? quoted(facts.target) : facts.target}` }]
 }
