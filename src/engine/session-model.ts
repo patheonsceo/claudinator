@@ -78,6 +78,8 @@ export type SessionModel = {
   /** Claude's latest todo list and the turn that wrote it, for live progress. */
   todos: Todo[]
   todosTurn: number
+  /** Claude Code's task list (TaskCreate, TaskUpdate), by task id, in creation order. */
+  tasks: Map<string, Todo>
   /** The last call started this turn, for the live line between calls. */
   lastStep: Running | null
   /** The current turn's calls as spans of time, to measure tools and waiting without counting overlaps twice. */
@@ -143,6 +145,7 @@ export function createModel(): SessionModel {
     lastStep: null,
     todos: [],
     todosTurn: 0,
+    tasks: new Map(),
   }
 }
 
@@ -433,6 +436,45 @@ export function turnOfRow(m: SessionModel, requestId: string, now: number): numb
 
 export function durationOf(m: SessionModel, id: string): number | undefined {
   return m.toolMs.get(id)
+}
+
+const rec = (v: unknown): Record<string, unknown> => (typeof v === 'object' && v !== null ? (v as Record<string, unknown>) : {})
+const text = (v: unknown): string => (typeof v === 'string' ? v : '')
+
+/**
+ * A main-loop call to one of Claude Code's task tools finished with `result`:
+ * keep the task list in step, and count it as this turn's progress.
+ */
+export function taskToolDone(m: SessionModel, tool: string, input: unknown, result: unknown): void {
+  const i = rec(input)
+  const r = rec(result)
+  if (tool === 'TaskCreate') {
+    const id = text(rec(r.task).id)
+    if (id === '') return
+    const label = text(i.activeForm) || text(i.subject) || text(rec(r.task).subject)
+    m.tasks.set(id, { status: 'pending', label: printable(label, 120) })
+  } else if (tool === 'TaskUpdate') {
+    const id = text(i.taskId)
+    const task = m.tasks.get(id)
+    if (!task) return
+    if (i.status === 'deleted') m.tasks.delete(id)
+    else {
+      if (typeof i.status === 'string') task.status = i.status
+      const label = text(i.activeForm) || text(i.subject)
+      if (label !== '') task.label = printable(label, 120)
+    }
+  } else if (tool === 'TaskList') {
+    if (!Array.isArray(r.tasks)) return
+    const known = m.tasks
+    m.tasks = new Map()
+    for (const t of r.tasks.map(rec)) {
+      const id = text(t.id)
+      if (id === '' || typeof t.status !== 'string') continue
+      m.tasks.set(id, { status: t.status, label: known.get(id)?.label ?? printable(text(t.subject), 120) })
+    }
+  } else return
+  m.todos = [...m.tasks.values()]
+  m.todosTurn = m.turn
 }
 
 /** How far through its todo list Claude is, while a turn runs that wrote one; otherwise null. */

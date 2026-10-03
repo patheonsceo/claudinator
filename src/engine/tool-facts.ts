@@ -66,6 +66,13 @@ export function factsOf(tool: string, input: unknown): ToolFacts {
       const active = todos.find(t => t.status === 'in_progress') ?? todos[0]
       return text(str(active?.content), 'other', 'Todos')
     }
+    case 'TaskCreate':
+      return text(str(i.subject), 'other', 'Plan')
+    case 'TaskUpdate':
+      return text(`${str(i.status)} #${str(i.taskId)}`.trim(), 'other', 'Task')
+    case 'TaskList':
+    case 'TaskGet':
+      return text('', 'other', 'Tasks')
     case 'ExitPlanMode':
       return text('', 'other', 'Plan')
     default: {

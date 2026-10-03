@@ -413,3 +413,33 @@ describe('live task progress from Claude’s todo list', () => {
     expect(Model.progressOf(m)).toBeNull()
   })
 })
+
+describe('live progress from Claude Code’s task tools', () => {
+  test('tasks created and updated this turn count, as TaskCreate and TaskUpdate report them', async () => {
+    const m = Model.createModel()
+    Model.startTurn(m, 0)
+    Model.taskToolDone(m, 'TaskCreate', { subject: 'Read the cart', activeForm: 'Reading the cart' }, { task: { id: '1', subject: 'Read the cart' } })
+    Model.taskToolDone(m, 'TaskCreate', { subject: 'Fix total', activeForm: 'Fixing total' }, { task: { id: '2', subject: 'Fix total' } })
+    Model.taskToolDone(m, 'TaskCreate', { subject: 'Run tests' }, { task: { id: '3', subject: 'Run tests' } })
+    expect(Model.progressOf(m)).toEqual({ done: 0, total: 3, active: 'Reading the cart' })
+    Model.taskToolDone(m, 'TaskUpdate', { taskId: '1', status: 'completed' }, { success: true, taskId: '1', updatedFields: ['status'] })
+    Model.taskToolDone(m, 'TaskUpdate', { taskId: '2', status: 'in_progress' }, { success: true, taskId: '2', updatedFields: ['status'] })
+    expect(Model.progressOf(m)).toEqual({ done: 1, total: 3, active: 'Fixing total' })
+    Model.taskToolDone(m, 'TaskUpdate', { taskId: '3', status: 'deleted' }, { success: true, taskId: '3', updatedFields: ['status'] })
+    expect(Model.progressOf(m)?.total).toBe(2)
+  })
+
+  test('a task list read back replaces what we knew, and junk results change nothing', async () => {
+    const m = Model.createModel()
+    Model.startTurn(m, 0)
+    Model.taskToolDone(m, 'TaskList', {}, { tasks: [{ id: 'a', subject: 'One', status: 'completed', blockedBy: [] }, { id: 'b', subject: 'Two', status: 'pending', blockedBy: [] }] })
+    expect(Model.progressOf(m)).toEqual({ done: 1, total: 2, active: 'Two' })
+    Model.taskToolDone(m, 'TaskCreate', { subject: 'x' }, 'not a record')
+    expect(Model.progressOf(m)?.total).toBe(2)
+  })
+
+  test('task tool rows say what they do', async () => {
+    expect(factsOf('TaskCreate', { subject: 'Fix total' })).toMatchObject({ verb: 'Plan', target: 'Fix total' })
+    expect(factsOf('TaskUpdate', { taskId: '2', status: 'completed' })).toMatchObject({ verb: 'Task', target: 'completed #2' })
+  })
+})
