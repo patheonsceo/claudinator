@@ -1,0 +1,50 @@
+name: Bug report
+description: Something looks or behaves wrong
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead. A screenshot helps a lot.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      placeholder: |
+        1. Pick the Hairline look with mini diffs on
+        2. Ask Claude to edit a file
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: cc-version
+    attributes:
+      label: Claude Code version
+      description: Output of `claude --version`
+    validations:
+      required: true
+  - type: input
+    id: claudinator-version
+    attributes:
+      label: Claudinator version
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where you run Claude Code
+      options:
+        - Terminal, fullscreen mode
+        - Terminal, classic scrolling layout
+        - Claude Desktop app, Code tab
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: terminal
+    attributes:
+      label: Terminal and OS
+      placeholder: e.g. Ghostty 1.2 on macOS 26, kitty on Arch Linux

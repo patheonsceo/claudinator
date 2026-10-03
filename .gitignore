@@ -1,0 +1,9 @@
+# Written by Claude Code when it loads the mod (types for your local build)
+.claude-plugin/types/
+
+# Dependencies and local tooling
+node_modules/
+.DS_Store
+
+# Demo recording output (GIFs are published from the media branch)
+demos/out/

@@ -1,0 +1,16 @@
+name: Look or ingredient idea
+description: Suggest a new look, ingredient, or pane
+labels: ["idea"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What it looks like and what problem it solves while you work.
+    validations:
+      required: true
+  - type: textarea
+    id: mockup
+    attributes:
+      label: Mockup or reference
+      description: A screenshot, sketch, or link to something with the feel you're after.
