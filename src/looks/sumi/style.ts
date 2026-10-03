@@ -19,9 +19,10 @@ export const C = {
 
 /**
  * The faint ink for words, between `inactive` and `subtle`: the theme's
- * `subtle` is a rule color, too pale to read as text.
+ * `subtle` is a rule color, too pale to read as text. Dark enough to stay apart
+ * from `inactive` where a 256-color terminal rounds hex colors.
  */
-export const WASH = { dark: '#57544f', light: '#9e9a92' } as const
+export const WASH = { dark: '#4c4a46', light: '#9e9a92' } as const
 
 /** Fixed 24-bit colors for the live rasters, which have no theme: each reads on dark and light. */
 export const LIVE_INK = { seal: 0x6a86cf, mid: 0x6f7891, wash: 0x75726d } as const
