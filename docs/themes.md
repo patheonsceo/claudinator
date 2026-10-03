@@ -19,6 +19,8 @@ Run `/theme` and pick the look's theme, such as **Claudinator Prism Dark** (mark
 
 The looks' ids are `hairline`, `broadsheet`, `mission`, `prism`, `sumi` and `blueprint`. Claudinator reads your theme setting to pick its own colors for light or dark, so a light theme gives the looks their light colors too.
 
+Besides recoloring the prompt box, dialogs and accents, each theme tints the surfaces Claude Code otherwise leaves a fixed gray: the pane docked beside the transcript (the picker, Chapters, Ledger and Pins) and `!` command and memory messages take the look's raised surface color.
+
 ## Terminal color schemes
 
 Each file below exists for every look as `claudinator-<look>-dark` and `claudinator-<look>-light`, for example `claudinator-blueprint-dark`.

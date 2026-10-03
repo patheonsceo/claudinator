@@ -20,6 +20,7 @@ All notable changes to Claudinator are recorded here. The format follows
 ### Changed
 - The picker offers every look on `1` to `6` and Off on `7`, every ingredient on its letter key, and the combos.
 - `/config` no longer offers each ingredient; looks bring their defaults and the picker saves your choices.
+- The picker is redesigned: a header with your setup, palette swatches for each look, ingredient switches, and the share code set apart. Each look's Claude Code theme also tints the docked pane and `!` command and memory messages, which Claude Code otherwise draws a fixed gray.
 
 ### Security
 - A project file cannot turn on Quiet or Footnotes, and a look it picks never brings them.
