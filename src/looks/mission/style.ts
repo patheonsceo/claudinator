@@ -36,17 +36,18 @@ export const TAGS: Record<Glyph, string> = {
 }
 
 export const TAG_WIDTH = 4
-export const METER_WIDTH = 10
-/** A meter fills completely at this many changed lines. */
-export const METER_CAP = 60
 /** The readout column: right-aligned values with a dotted lead-in. */
 export const READOUT_WIDTH = 9
 /** `2m 14s` is the widest duration. */
 export const DURATION_WIDTH = 6
+/** Cells on a row's timeline, drawn one space apart like the lookbook's dotted track. */
+export const GANTT_CELLS = 16
+/** The timeline reads on a log scale from the turn's start out to ten minutes. */
+const GANTT_SPAN_MS = 600_000
+const GANTT_UNIT_MS = 500
 
 export const LEADER = '·'.repeat(300)
 export const RULE = '─'.repeat(400)
-export const DOUBLE_RULE = '═'.repeat(400)
 
 type Extra = Pick<TextProps, 'bold' | 'wrap'>
 
@@ -100,23 +101,39 @@ export function turnLabel(turn: number): string {
   return `T${String(Math.max(0, Math.floor(turn))).padStart(2, '0')}`
 }
 
-/** How a ten-cell meter splits for an edit: added lines, removed lines, empty. */
-export function meterCells(add: number, del: number): { ok: number; err: number; empty: number } {
-  const total = Math.max(0, add) + Math.max(0, del)
-  if (total === 0) return { ok: 0, err: 0, empty: METER_WIDTH }
-  const lit = Math.max(1, Math.round((Math.min(total, METER_CAP) / METER_CAP) * METER_WIDTH))
-  const ok = Math.round((lit * Math.max(0, add)) / total)
-  return { ok, err: lit - ok, empty: METER_WIDTH - lit }
+/** Where a moment in the turn falls on the timeline, in cells (fractional). */
+function ganttAt(ms: number): number {
+  const t = Number.isFinite(ms) ? Math.max(0, ms) : 0
+  return (Math.log2(1 + t / GANTT_UNIT_MS) / Math.log2(1 + GANTT_SPAN_MS / GANTT_UNIT_MS)) * GANTT_CELLS
 }
 
-/** The edit meter: `▮▮▮▯▯▯▯▯▯▯`. */
-export function meter(ctx: Ctx, add: number, del: number): RenderElement[] {
-  const m = meterCells(add, del)
-  const out: RenderElement[] = []
-  if (m.ok > 0) out.push(txt(ctx, C.ok, '▮'.repeat(m.ok)))
-  if (m.err > 0) out.push(txt(ctx, C.err, '▮'.repeat(m.err)))
-  if (m.empty > 0) out.push(txt(ctx, C.faint, '▯'.repeat(m.empty)))
-  return out
+/**
+ * The cells a call covers on its row's timeline. A row never learns how long
+ * its turn will run, so the track is a fixed log scale: the first seconds of a
+ * turn spread out, and ten minutes in reaches the right edge.
+ */
+export function ganttSpan(startMs: number, endMs: number): { start: number; width: number } {
+  const start = Math.min(GANTT_CELLS - 1, Math.floor(ganttAt(startMs)))
+  const end = Math.min(GANTT_CELLS, Math.ceil(ganttAt(Math.max(startMs, Number.isFinite(endMs) ? endMs : startMs))))
+  return { start, width: Math.max(1, end - start) }
+}
+
+/** The timeline: `· · · ▮ ▮ · · ·`, the bar in `color`; dots alone when the span is unknown. */
+export function gantt(ctx: Ctx, span: { start: number; width: number } | null, color: string): RenderElement {
+  const cell = (i: number): boolean => span !== null && i >= span.start && i < span.start + span.width
+  const runs: Array<{ lit: boolean; text: string }> = []
+  for (let i = 0; i < GANTT_CELLS; i++) {
+    const lit = cell(i)
+    const ch = (i > 0 ? ' ' : '') + (lit ? '▮' : '·')
+    const last = runs[runs.length - 1]
+    // A gap between two lit cells belongs to the bar; a gap before one belongs to the track.
+    if (last && last.lit === lit) last.text += ch
+    else if (i > 0) {
+      if (last) last.text += ' '
+      runs.push({ lit, text: lit ? '▮' : '·' })
+    } else runs.push({ lit, text: ch })
+  }
+  return ctx.els.Text({ children: runs.map(r => txt(ctx, r.lit ? color : C.faint, r.text)) })
 }
 
 /** A usage bar: `▰▰▰▰▱▱▱▱▱▱`, teal, amber past 70%, red past 90%. */

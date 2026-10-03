@@ -3,132 +3,169 @@ import type { RenderElement } from 'claude-code'
 import { printable } from '../../engine/format'
 import { encodeCells } from '../../engine/raster'
 import type { Cell } from '../../engine/raster'
-import { inatorWord } from '../common'
 import type { Ctx, LiveFrame, LiveMode, LiveState } from '../look'
-import { C, grow, tClock, txt } from './style'
+import { C, TAGS, grow, shrinks, tClock, txt } from './style'
 
 export { tClock } from './style'
 
+/** The word after the lamp while Claude thinks or writes; a running step takes its tag instead. */
 export const LIVE_WORDS: Record<LiveMode, string> = { thinking: 'THINK', writing: 'XMIT', running: 'EXEC' }
 
-/** Width of the oscilloscope, the transmission trace and the progress sweep. */
-export const SCOPE_COLUMNS = 22
+/** A running step's tag, from the live state's activity: the same words the rows use. */
+const STEP_TAGS: Record<string, string> = {
+  Reading: TAGS.read,
+  Searching: TAGS.search,
+  Finding: TAGS.search,
+  Listing: TAGS.search,
+  Editing: TAGS.edit,
+  Writing: TAGS.create,
+  Running: TAGS.run,
+  Fetching: TAGS.web,
+  Delegating: TAGS.agent,
+  Planning: 'PLAN',
+}
+
+/** Bars in the thinking sparkline and the writing trace. */
+export const TRACE_COLUMNS = 22
+/** Cells in the running progress bar. */
+export const BAR_COLUMNS = 18
 const CLOCK_COLUMNS = 7
+/** Ticks (about 100 ms each) between two steps of the sparkline's scroll. */
+const SPARK_STEP = 3
+/** Ticks per cell of the progress bar's fill, and the steps it holds full before it starts again. */
+const BAR_STEP = 2
+const BAR_HOLD = 5
 
 /**
- * Raster colors. Blits come without a theme, so these are mid-tones that read
- * on Mission Control's dark and light grounds alike.
+ * Raster colors. Blits come without a theme, so these are mid-tones of the
+ * palette's teal, amber and green that read on Mission Control's dark and
+ * light grounds alike.
  */
 const LIVE_HEX = {
-  amber: 0xf0a030,
-  amberTail: [0xf0a030, 0xd28a2a, 0xae7428, 0x8a6030],
   teal: 0x3fbfa9,
-  tealOld: 0x4f7d75,
-  track: 0x5e655c,
+  amber: 0xf0a030,
+  green: 0x6cb44c,
+  track: 0x6b7268,
   clock: 0x8a9087,
 } as const
 
 const LEVELS = '▁▂▃▄▅▆▇█'
 
-function mix(a: number, b: number, t: number): number {
-  const ch = (shift: number): number => Math.round(((a >> shift) & 255) * (1 - t) + ((b >> shift) & 255) * t)
-  return (ch(16) << 16) | (ch(8) << 8) | ch(0)
+/** A deterministic number in [0, 1) for sample `k`. */
+function noise(k: number): number {
+  let h = Math.imul(k, 0x9e3779b1)
+  h ^= h >>> 16
+  h = Math.imul(h, 0x85ebca6b)
+  h ^= h >>> 13
+  h = Math.imul(h, 0xc2b2ae35)
+  h ^= h >>> 16
+  return (h >>> 0) / 4_294_967_296
 }
 
-/** Phosphor: the oldest samples (left) glow less than the newest (right). */
-function phosphor(x: number): number {
-  return mix(LIVE_HEX.tealOld, LIVE_HEX.teal, x / (SCOPE_COLUMNS - 1))
+/** Sample `k` of the thinking signal, 0–7: two swells under a jagged jitter, like live telemetry. */
+function sparkLevel(k: number): number {
+  const v = 3.4 + 1.9 * Math.sin(k * 0.5) + 1.1 * Math.sin(k * 0.19 + 1.7) + (noise(k) - 0.5) * 3.6
+  return Math.max(0, Math.min(LEVELS.length - 1, Math.round(v)))
 }
 
-function level(v: number): string {
-  const i = Math.max(0, Math.min(LEVELS.length - 1, Math.round(((v + 1) / 2) * (LEVELS.length - 1))))
-  return LEVELS[i] ?? '▁'
+/** The sparkline's bar heights for one frame, oldest left; it scrolls a bar every few ticks. */
+export function sparkLevels(frame: number): number[] {
+  const base = Math.floor(Math.max(0, frame) / SPARK_STEP)
+  return Array.from({ length: TRACE_COLUMNS }, (_, x) => sparkLevel(base + x))
 }
 
 /** A deterministic bit for sample `k` of the transmission trace. */
 function bit(k: number): boolean {
-  let h = Math.imul(k ^ 0x5bd1e995, 0x27d4eb2d) >>> 0
-  h ^= h >>> 15
-  return (h & 4) !== 0
+  return noise(k) >= 0.5
 }
 
-/** One cell of the instrument: an analog trace, a data stream, or a sweep. */
-function sample(mode: LiveMode, x: number, frame: number): Cell {
-  if (mode === 'thinking') {
-    // A sum of three sines, scrolling left half a cell per frame.
-    const t = x + frame * 0.5
-    const v = 0.55 * Math.sin(t * 0.52) + 0.3 * Math.sin(t * 0.21 + 1.3) + 0.15 * Math.sin(t * 1.7 + 0.4)
-    return { char: level(v), fg: phosphor(x) }
+/** How many cells of the progress bar are filled: it fills, holds a moment, and starts again. */
+export function barFill(frame: number): number {
+  const step = Math.floor(Math.max(0, frame) / BAR_STEP) % (BAR_COLUMNS + BAR_HOLD)
+  return Math.min(BAR_COLUMNS, step + 1)
+}
+
+type Mark = { char: string; tone: 'teal' | 'amber' | 'green' | 'track' }
+
+/** The instrument for a mode and frame: sparkline, transmission trace, or progress bar. */
+function marks(mode: LiveMode, frame: number): Mark[] {
+  if (mode === 'running') {
+    const w = barFill(frame)
+    return Array.from({ length: BAR_COLUMNS }, (_, x) => (x < w ? { char: '█', tone: 'green' } : { char: '░', tone: 'track' }))
   }
   if (mode === 'writing') {
-    // Two cells per bit, scrolling left a cell per frame; a half step marks each edge.
-    const k = Math.floor((x + frame) / 2)
-    const high = bit(k)
-    const edge = high !== bit(k - 1) && (x + frame) % 2 === 0
-    return { char: edge ? '▄' : high ? '▆' : '▁', fg: phosphor(x) }
+    // Two cells per bit, scrolling left a cell per tick; a half step marks each edge.
+    return Array.from({ length: TRACE_COLUMNS }, (_, x) => {
+      const k = Math.floor((x + frame) / 2)
+      const high = bit(k)
+      const edge = high !== bit(k - 1) && (x + frame) % 2 === 0
+      return { char: edge ? '▄' : high ? '▆' : '▁', tone: 'teal' }
+    })
   }
-  // A head and a three-cell tail sweeping across a faint track.
-  const d = (frame % (SCOPE_COLUMNS + 6)) - 2 - x
-  const tail = LIVE_HEX.amberTail[d]
-  return d >= 0 && tail !== undefined ? { char: '▰', fg: tail } : { char: '▱', fg: LIVE_HEX.track }
+  const levels = sparkLevels(frame)
+  const peak = Math.max(...levels)
+  return levels.map(v => ({ char: LEVELS[v] ?? '▁', tone: v === peak ? 'amber' : 'teal' }))
 }
 
-function samples(mode: LiveMode, frame: number): Cell[] {
-  return Array.from({ length: SCOPE_COLUMNS }, (_, x) => sample(mode, x, frame))
-}
-
-/** The instrument's cells for one frame. */
-export function scopeCells(mode: LiveMode, frame: number): string {
-  return encodeCells(samples(mode, frame))
-}
-
-/** The record lamp, blinking about once a second. */
-export function lampCells(frame: number): string {
-  return encodeCells([{ char: Math.floor(frame / 5) % 2 === 0 ? '◉' : '○', fg: LIVE_HEX.amber }])
+/** The instrument's raster cells for one frame. */
+export function traceCells(mode: LiveMode, frame: number): string {
+  return encodeCells(marks(mode, frame).map((m): Cell => ({ char: m.char, fg: LIVE_HEX[m.tone] })))
 }
 
 export function clockCells(ms: number): string {
   return encodeCells([...tClock(ms)].map(char => ({ char, fg: LIVE_HEX.clock })))
 }
 
-/** Lamp, instrument and mission clock. The word is plain text, so -inator words never change a raster's width. */
+function instrument(mode: LiveMode): { key: string; columns: number } {
+  return mode === 'running' ? { key: 'cz-mission-bar', columns: BAR_COLUMNS } : { key: 'cz-mission-trace', columns: TRACE_COLUMNS }
+}
+
+/** The instrument and the mission clock. Words are plain text, so -inator words never change a raster's width. */
 export function liveFrames(state: LiveState, frame: number): LiveFrame[] {
   return [
-    { key: 'cz-mission-lamp', columns: 1, cells: lampCells(frame) },
-    { key: 'cz-mission-scope', columns: SCOPE_COLUMNS, cells: scopeCells(state.mode, frame) },
+    { ...instrument(state.mode), cells: traceCells(state.mode, frame) },
     { key: 'cz-mission-clock', columns: CLOCK_COLUMNS, cells: clockCells(state.elapsedMs) },
   ]
 }
 
-function wordOf(state: LiveState, frame: number, inator: boolean): string {
-  return inator && state.mode === 'thinking' ? inatorWord(frame).toUpperCase() : LIVE_WORDS[state.mode].padEnd(5)
+function wordOf(state: LiveState, inator: boolean): string {
+  if (state.mode === 'running') return (state.activity !== undefined ? STEP_TAGS[state.activity] : undefined) ?? LIVE_WORDS.running
+  return inator && state.mode === 'thinking' ? 'SCHEME' : LIVE_WORDS[state.mode]
 }
 
+const TOKENS: Record<Mark['tone'], string> = { teal: C.teal, amber: C.amber, green: C.ok, track: C.faint }
+
+/** The instrument as plain text, for the desktop. */
+function instrumentText(ctx: Ctx, mode: LiveMode, frame: number): RenderElement {
+  const runs: Mark[] = []
+  for (const m of marks(mode, frame)) {
+    const last = runs[runs.length - 1]
+    if (last && last.tone === m.tone) last.char += m.char
+    else runs.push({ ...m })
+  }
+  return ctx.els.Text({ children: runs.map(r => txt(ctx, TOKENS[r.tone], r.char)) })
+}
+
+/**
+ * `◉ THINK ▂▃▅▆▇▅▃▂▁▂▃ … T+00:43` while thinking, `◉ EXEC npm test ████░░░ … T+00:43`
+ * while a tool runs: lamp, word, instrument, and the mission clock at the right edge.
+ */
 export function live(state: LiveState, frame: number, ctx: Ctx): RenderElement {
   // The live line is always this turn's: it never fades.
   const flat = { ...ctx, fade: 0 as const }
   const els = ctx.els
   const inator = state.inator ?? ctx.settings.ingredients.inator
-  const word = txt(flat, C.amber, wordOf(state, frame, inator), { bold: true })
-  const detail = grow(flat, txt(flat, C.dim, printable(state.detail, 200), { wrap: 'truncate-end' }))
-  if (ctx.surface === 'terminal' && 'Raster' in els) {
-    const [lamp, scope, clock] = liveFrames(state, frame)
-    const raster = (f: LiveFrame | undefined, key: string, columns: number): RenderElement => els.Raster({ key, columns, rows: 1, cells: f?.cells ?? '' })
-    return els.Box({
-      flexDirection: 'row',
-      columnGap: 1,
-      children: [
-        raster(lamp, 'cz-mission-lamp', 1),
-        word,
-        raster(scope, 'cz-mission-scope', SCOPE_COLUMNS),
-        detail,
-        raster(clock, 'cz-mission-clock', CLOCK_COLUMNS),
-      ],
-    })
-  }
-  return els.Box({
-    flexDirection: 'row',
-    columnGap: 1,
-    children: [txt(flat, C.amber, '◉'), word, txt(flat, state.mode === 'running' ? C.amber : C.teal, samples(state.mode, frame).map(c => c.char).join('')), detail, txt(flat, C.dim, tClock(state.elapsedMs))],
-  })
+  const running = state.mode === 'running'
+  const detail = printable(state.detail, 200)
+  const lamp = txt(flat, C.teal, '◉')
+  const word = txt(flat, C.teal, wordOf(state, inator))
+  const terminal = ctx.surface === 'terminal' && 'Raster' in els
+  const shape = instrument(state.mode)
+  const scope = terminal ? els.Raster({ key: shape.key, columns: shape.columns, rows: 1, cells: traceCells(state.mode, frame) }) : instrumentText(flat, state.mode, frame)
+  const clock = terminal ? els.Raster({ key: 'cz-mission-clock', columns: CLOCK_COLUMNS, rows: 1, cells: clockCells(state.elapsedMs) }) : txt(flat, C.dim, tClock(state.elapsedMs))
+  // Running, the target sits before the bar; otherwise Claude Code's status (a retry, a backoff) fills the gap.
+  const children = running
+    ? [lamp, word, ...(detail === '' ? [] : [shrinks(flat, txt(flat, C.text, detail, { wrap: 'truncate-middle' }))]), scope, grow(flat, txt(flat, C.dim, '')), clock]
+    : [lamp, word, scope, grow(flat, txt(flat, C.dim, detail, { wrap: 'truncate-end' })), clock]
+  return els.Box({ flexDirection: 'row', columnGap: 1, children })
 }
