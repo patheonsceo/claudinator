@@ -48,7 +48,7 @@ Ingredients work in any look. Each look turns on its own favorites, and your cho
 | `q` | Quiet | Hides reads, searches and commands, leaving a one-line trace. |
 | `h` | Headlines | Each finished turn gets a title above its prompt. |
 | `n` | Footnotes | Tool calls become numbered notes on Claude's prose. |
-| `t` | Time strip | Each receipt shows where the turn's time went. |
+| `t` | Time strip | Just above the prompt, a bar shows where the last turn's time went. |
 | `a` | Attention ladder | When Claude waits on your permission: a toast at 30 seconds, then an optional sound and desktop notification at 2 minutes. |
 | `i` | -inator mode | A layer of personality. Curse you, flaky tests. |
 
