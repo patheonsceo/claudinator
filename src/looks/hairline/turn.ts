@@ -4,7 +4,7 @@ import { formatDuration, plural, printable } from '../../engine/format'
 import { tone } from '../../engine/palette'
 import { inatorQuip, notesBlock, stripColors, timeStripRow } from '../common'
 import type { Ctx, HeadlineData, ReceiptData } from '../look'
-import { C, delta, grow, txt } from './style'
+import { C, NARROW_COLUMNS, delta, grow, txt } from './style'
 
 export function userMessage(text: string, ctx: Ctx): RenderElement {
   const { Box, Text } = ctx.els
@@ -36,6 +36,23 @@ export function receipt(data: ReceiptData, ctx: Ctx): RenderElement {
   return Box({ flexDirection: 'column', children: [notes, line, strip].filter((x): x is RenderElement => x !== null) })
 }
 
+/** Cells in the receipt's context bar. */
+const METER_CELLS = 10
+
+/** Context used as a ten-cell hairline, accent then faint, beside `41% ctx`; the percent alone when narrow. */
+function contextMeter(ctx: Ctx, percent: number): RenderElement[] {
+  const pct = Math.max(0, Math.min(100, Math.round(percent)))
+  if (ctx.columns < NARROW_COLUMNS) return [txt(ctx, C.dim, `${pct}% ctx`)]
+  const filled = Math.round((pct / 100) * METER_CELLS)
+  const bar = ctx.els.Text({
+    children: [
+      ...(filled > 0 ? [txt(ctx, C.accent, '─'.repeat(filled))] : []),
+      ...(filled < METER_CELLS ? [txt(ctx, C.faint, '─'.repeat(METER_CELLS - filled))] : []),
+    ],
+  })
+  return [bar, txt(ctx, C.dim, `${pct}% ctx`)]
+}
+
 function receiptLine(data: ReceiptData, ctx: Ctx): RenderElement {
   const { Box, Text } = ctx.els
   const sep = (): RenderElement => txt(ctx, C.faint, '·')
@@ -44,7 +61,7 @@ function receiptLine(data: ReceiptData, ctx: Ctx): RenderElement {
   if (s) parts.push(txt(ctx, C.text, `Turn ${s.turn}`), sep())
   parts.push(txt(ctx, C.dim, formatDuration(data.durationMs)))
   if (s && s.files.length > 0) parts.push(sep(), txt(ctx, C.dim, plural(s.files.length, 'file')), sep(), ...delta(ctx, s.add, s.del))
-  if (s && s.contextPercent !== undefined) parts.push(sep(), txt(ctx, C.dim, `${Math.round(s.contextPercent)}% ctx`))
+  if (s && s.contextPercent !== undefined) parts.push(sep(), ...contextMeter(ctx, s.contextPercent))
   if (ctx.settings.ingredients.inator) parts.push(sep(), txt(ctx, C.accent, inatorQuip(s)))
   return Box({
     flexDirection: 'row',
