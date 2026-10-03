@@ -13,7 +13,8 @@ Show
 Type "Fix total() in src/cart.js so it counts item.qty, then run node --test."
 Sleep 500ms
 Enter
-Sleep 43s
+Wait+Screen@120s /Turn 1/
+Sleep 3s
 Hide
 Ctrl+C
 Ctrl+C
