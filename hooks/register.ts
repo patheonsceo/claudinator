@@ -7,7 +7,7 @@ import type { ElementTable, EngineInterface, Register, RenderSurface } from 'cla
 
 import { fadeOf } from '../src/engine/palette'
 import * as Model from '../src/engine/session-model'
-import { DEFAULT_SETTINGS, LOOK_LABELS, choiceOf, isLookId, layerOf, optionsLayer, resolveSettings, toggled, withLook } from '../src/engine/settings'
+import { DEFAULT_SETTINGS, LOOK_LABELS, choiceOf, isLookId, layerOf, optionsLayer, projectLayerOf, resolveSettings, toggled, withLook } from '../src/engine/settings'
 import type { IngredientId, Settings, SettingsLayer } from '../src/engine/settings'
 import { isChangeTool } from '../src/engine/tool-facts'
 import { LOOKS } from '../src/looks'
@@ -40,7 +40,7 @@ function isHiddenByQuiet(settings: Settings, row: { tool: string; isErrored: boo
 
 async function readProjectLayer($: EngineInterface): Promise<SettingsLayer> {
   try {
-    return layerOf(JSON.parse(await $.fs.read('.claude/claudinator.json')))
+    return projectLayerOf(JSON.parse(await $.fs.read('.claude/claudinator.json')))
   } catch {
     return {}
   }
