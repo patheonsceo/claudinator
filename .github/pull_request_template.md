@@ -8,7 +8,7 @@
 
 ## Checklist
 
-- [ ] `claude plugin validate --strict .` passes
+- [ ] `claude plugin validate --strict .` and `claude plugin validate --strict .claude-plugin/plugin.json` pass
 - [ ] `claude plugin test .` passes
 - [ ] `CHANGELOG.md` updated under `[Unreleased]`
 - [ ] No network requests and no reading of Claude's history files
