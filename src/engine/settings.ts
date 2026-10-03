@@ -56,6 +56,21 @@ export function layerOf(raw: unknown): SettingsLayer {
   return compact(r.look, ingredientsOf(r.ingredients))
 }
 
+/** Ingredients that hide rows. Only the user may turn these on, never a project file. */
+const HIDING_INGREDIENTS: readonly IngredientId[] = ['quiet']
+
+/**
+ * A layer from a project's .claude/claudinator.json. A repository you clone
+ * must not be able to hide tool calls from you, so hiding ingredients are dropped.
+ */
+export function projectLayerOf(raw: unknown): SettingsLayer {
+  const layer = layerOf(raw)
+  if (!layer.ingredients) return layer
+  const ingredients = { ...layer.ingredients }
+  for (const id of HIDING_INGREDIENTS) delete ingredients[id]
+  return compact(layer.look, ingredients)
+}
+
 /** A layer from the plugin's userConfig options (`look`, `recency`, `miniDiffs`, ...). */
 export function optionsLayer(options: Readonly<Record<string, unknown>>): SettingsLayer {
   return compact(options.look, ingredientsOf(options))
