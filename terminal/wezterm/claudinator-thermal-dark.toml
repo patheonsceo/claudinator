@@ -1,0 +1,13 @@
+[colors]
+foreground = "#ebe7df"
+background = "#1a1918"
+cursor_bg = "#ebe7df"
+cursor_border = "#ebe7df"
+cursor_fg = "#1a1918"
+selection_bg = "#3c3934"
+selection_fg = "#ebe7df"
+ansi = ["#2a2826", "#e38b78", "#a6c48a", "#d9b56b", "#8fa3b8", "#b89aae", "#8fb5ad", "#cfcac0"]
+brights = ["#5a564f", "#eda593", "#bcd4a4", "#e6c88a", "#a9bacb", "#cbb2c3", "#a7c8c1", "#f5f2ec"]
+
+[metadata]
+name = "Claudinator Thermal Dark"

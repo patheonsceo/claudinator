@@ -1,0 +1,32 @@
+# Claudinator Thermal Light
+[colors.primary]
+background = "#fdfcf9"
+foreground = "#232120"
+
+[colors.cursor]
+cursor = "#232120"
+text = "#fdfcf9"
+
+[colors.selection]
+background = "#e6e2d9"
+text = "#232120"
+
+[colors.normal]
+black = "#2e2c29"
+red = "#a8382a"
+green = "#3f6b2a"
+yellow = "#8a6414"
+blue = "#3e5a78"
+magenta = "#7a4a6a"
+cyan = "#2f6b66"
+white = "#d8d4cc"
+
+[colors.bright]
+black = "#76726b"
+red = "#c04a3a"
+green = "#557f3d"
+yellow = "#a87a20"
+blue = "#557294"
+magenta = "#94607f"
+cyan = "#3f8580"
+white = "#ffffff"

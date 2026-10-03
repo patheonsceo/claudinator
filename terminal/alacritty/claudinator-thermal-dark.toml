@@ -1,0 +1,32 @@
+# Claudinator Thermal Dark
+[colors.primary]
+background = "#1a1918"
+foreground = "#ebe7df"
+
+[colors.cursor]
+cursor = "#ebe7df"
+text = "#1a1918"
+
+[colors.selection]
+background = "#3c3934"
+text = "#ebe7df"
+
+[colors.normal]
+black = "#2a2826"
+red = "#e38b78"
+green = "#a6c48a"
+yellow = "#d9b56b"
+blue = "#8fa3b8"
+magenta = "#b89aae"
+cyan = "#8fb5ad"
+white = "#cfcac0"
+
+[colors.bright]
+black = "#5a564f"
+red = "#eda593"
+green = "#bcd4a4"
+yellow = "#e6c88a"
+blue = "#a9bacb"
+magenta = "#cbb2c3"
+cyan = "#a7c8c1"
+white = "#f5f2ec"
