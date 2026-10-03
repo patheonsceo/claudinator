@@ -13,6 +13,7 @@ export const C = {
   text: 'text',
   dim: 'inactive',
   faint: 'subtle',
+  add: 'success',
   err: 'error',
   warn: 'warning',
 } as const
@@ -27,17 +28,18 @@ export const WASH = { dark: '#4c4a46', light: '#9e9a92' } as const
 /** Fixed 24-bit colors for the live rasters, which have no theme: each reads on dark and light. */
 export const LIVE_INK = { seal: 0x6a86cf, mid: 0x6f7891, wash: 0x75726d } as const
 
-/** The ensō drawing itself, one phase per step. */
-export const ENSO = ['◌', '○', '◯', '◯', '○', '◌'] as const
-
-/** Frames per ensō phase (the live line ticks ten times a second). */
-export const ENSO_STEP = 5
-
-/** Every Sumi row sits this far in; mini diff lines sit under the file name. */
+/**
+ * Every Sumi row sits this far in. A mark and its words are one space apart
+ * (`■ session.ts`); the diff wash starts a column past the words, its code and
+ * a failure's detail one further (its padding).
+ */
 export const INDENT = 3
 export const DIFF_INDENT = 6
-/** The breath between a mark and its words. */
-export const GAP = 2
+export const DETAIL_INDENT = 7
+/** The space between a mark and its words. */
+export const GAP = 1
+/** What sets the next part three columns on (`■ session.ts   +38 −9`): the gap plus this. */
+export const APART = 2
 
 /** Below this width, Sumi drops slow-call times and caps its traces shorter. */
 export const NARROW_COLUMNS = 100
@@ -71,11 +73,24 @@ export function grow(ctx: Ctx, child: RenderElement): RenderElement {
   return ctx.els.Box({ flexGrow: 1, flexShrink: 1, minWidth: 0, children: child })
 }
 
+/** A part set three columns past the one before, keeping its width. */
+export function apart(ctx: Ctx, child: RenderElement): RenderElement {
+  return ctx.els.Box({ flexShrink: 0, paddingLeft: APART, children: child })
+}
+
+/** `+38 −9`, each side in its own ink; a side with nothing to count stays out. */
+export function delta(ctx: Ctx, add: number, del: number): RenderElement[] {
+  const out: RenderElement[] = []
+  if (add > 0) out.push(txt(ctx, C.add, `+${add}`))
+  if (del > 0) out.push(txt(ctx, C.err, `${out.length > 0 ? ' ' : ''}−${del}`))
+  return out
+}
+
 /** What follows a row: `…` while it runs, its time only when it was slow and there is room. */
 export function tail(ctx: Ctx, row: { isRunning: boolean; durationMs?: number }): RenderElement[] {
   if (row.durationMs === undefined) return row.isRunning ? [txt(ctx, wash(ctx), '…')] : []
   if (row.durationMs < SLOW_MS || ctx.columns < NARROW_COLUMNS) return []
-  return [ctx.els.Box({ flexShrink: 0, children: txt(ctx, wash(ctx), formatDuration(row.durationMs)) })]
+  return [apart(ctx, txt(ctx, wash(ctx), formatDuration(row.durationMs)))]
 }
 
 const CLOSING = /[,.;:!?)\]}’”'"…]/
