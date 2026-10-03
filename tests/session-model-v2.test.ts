@@ -54,6 +54,15 @@ describe('session model for the full suite', () => {
     expect(m.lastCompleted?.notes?.map(n => [n.n, n.tool, n.durationMs])).toEqual([[1, 'Read', undefined], [2, 'Grep', undefined], [3, 'Bash', 10]])
   })
 
+  test('calls made before any reply text attach to the first reply block that follows', async () => {
+    const m = Model.createModel()
+    Model.startTurn(m, 0)
+    Model.toolStarted(m, 'r1', 'Read', { file_path: '/w/a.ts' }, 1, true)
+    Model.toolStarted(m, 'r2', 'Read', { file_path: '/w/b.ts' }, 2, true)
+    Model.assistantSeen(m, 'msg-final')
+    expect(Model.marksOf(m, 'msg-final')).toEqual([1, 2])
+  })
+
   test('the ledger collects every file changed in the session', async () => {
     const m = Model.createModel()
     Model.startTurn(m, 0)

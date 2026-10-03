@@ -117,7 +117,10 @@ export function startTurn(m: SessionModel, now: number): void {
 export function assistantSeen(m: SessionModel, requestId: string): void {
   if (m.isWorking && !m.marks.has(requestId)) {
     m.lastAssistantId = requestId
-    m.marks.set(requestId, [])
+    // Calls made before any reply text this turn belong to the first block that follows.
+    const early = m.marks.get('') ?? []
+    m.marks.delete('')
+    m.marks.set(requestId, early)
   }
 }
 
