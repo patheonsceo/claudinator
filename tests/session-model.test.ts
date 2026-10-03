@@ -53,6 +53,22 @@ describe('session-model', () => {
     expect(Model.durationOf(m, 'never-started')).toBeUndefined()
   })
 
+  test('a call that waited on a permission prompt shows no duration', async () => {
+    const m = Model.createModel()
+    Model.toolStarted(m, 't', 'Edit', {}, 0)
+    Model.toolPrompted(m, 't')
+    Model.toolFinished(m, 't', 'Edit', {}, 40_000, false)
+    expect(Model.durationOf(m, 't')).toBeUndefined()
+  })
+
+  test('a turn whose start was never seen gets no receipt stats', async () => {
+    const m = Model.createModel()
+    Model.toolStarted(m, 'e', 'Edit', { file_path: '/w/a.ts', old_string: 'a', new_string: 'b' }, 0)
+    Model.toolFinished(m, 'e', 'Edit', { file_path: '/w/a.ts', old_string: 'a', new_string: 'b' }, 10, false)
+    Model.completeTurn(m, 100)
+    expect(m.lastCompleted).toBeNull()
+  })
+
   test('latestRunning is the call that started last', async () => {
     const m = Model.createModel()
     Model.toolStarted(m, 'a', 'Read', { file_path: '/a' }, 1)

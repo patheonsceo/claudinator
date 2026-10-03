@@ -19,6 +19,7 @@ export type SessionModel = {
   toolStart: Map<string, number>
   toolMs: Map<string, number>
   running: Map<string, Running>
+  prompted: Set<string>
   receipts: Map<string, TurnStats | null>
   rowTurn: Map<string, number | undefined>
 }
@@ -41,6 +42,7 @@ export function createModel(): SessionModel {
     toolStart: new Map(),
     toolMs: new Map(),
     running: new Map(),
+    prompted: new Set(),
     receipts: new Map(),
     rowTurn: new Map(),
   }
@@ -63,9 +65,14 @@ export function toolStarted(m: SessionModel, id: string, tool: string, input: un
   m.running.set(id, { tool, input, startedAt: now })
 }
 
+/** A call that waited on a permission prompt: its time is the user's, so no duration is shown. */
+export function toolPrompted(m: SessionModel, id: string): void {
+  m.prompted.add(id)
+}
+
 export function toolFinished(m: SessionModel, id: string, tool: string, input: unknown, now: number, isError: boolean): void {
   const start = m.toolStart.get(id)
-  if (start !== undefined) m.toolMs.set(id, Math.max(0, now - start))
+  if (start !== undefined && !m.prompted.has(id)) m.toolMs.set(id, Math.max(0, now - start))
   m.running.delete(id)
   if (isError || !isChangeTool(tool)) return
   const change = changeOf(tool, input)
@@ -76,9 +83,15 @@ export function toolFinished(m: SessionModel, id: string, tool: string, input: u
 }
 
 export function completeTurn(m: SessionModel, now: number, contextPercent?: number): void {
+  const sawStart = m.isWorking
   m.isWorking = false
   m.completedAt = now
   m.running.clear()
+  // A turn that began before Claudinator loaded has partial stats; show none rather than wrong ones.
+  if (!sawStart) {
+    m.lastCompleted = null
+    return
+  }
   m.lastCompleted = {
     ...m.current,
     files: [...m.current.files],

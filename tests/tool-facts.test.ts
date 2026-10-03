@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { bashSummary, changeOf, errorSummary, factsOf, groupSummary, isChangeTool, lineDelta, pickDiffLines } from '../src/engine/tool-facts'
+import { bashSummary, changeOf, errorSummary, factsOf, groupSummary, isChangeTool, isQuietable, lineDelta, pickDiffLines } from '../src/engine/tool-facts'
 
 describe('tool-facts', () => {
   test('built-in tools get a verb, target and glyph', async () => {
@@ -61,6 +61,22 @@ describe('tool-facts', () => {
       { tool: 'Grep', input: {} },
     ])).toBe('Read 2 files, ran 1 command, searched 1 pattern')
     expect(groupSummary([])).toBe('')
+  })
+
+  test('colored output and escape codes never reach a drawing', async () => {
+    expect(bashSummary({ stdout: '\x1b[32m✓\x1b[0m 24 passed\n', stderr: '' })).toBe('✓ 24 passed')
+    expect(factsOf('Bash', { command: 'printf "\x1b[31mred"' }).target).toBe('printf "red"')
+    expect(factsOf('Read', { file_path: '/w/a\x07.ts' }).target).toBe('/w/a.ts')
+  })
+
+  test('tools with long names get a short verb', async () => {
+    expect(factsOf('TodoWrite', { todos: [{ content: 'Fix the cart', status: 'in_progress' }, { content: 'b', status: 'pending' }] })).toMatchObject({ verb: 'Todos', target: 'Fix the cart' })
+    expect(factsOf('ExitPlanMode', {}).verb).toBe('Plan')
+  })
+
+  test('Quiet may hide reads, searches, commands and fetches, never agents or other tools', async () => {
+    expect(isQuietable('Read') && isQuietable('Grep') && isQuietable('Bash') && isQuietable('WebFetch')).toBe(true)
+    expect(isQuietable('Edit') || isQuietable('Task') || isQuietable('mcp__slack__send_message')).toBe(false)
   })
 
   test('result summaries take the telling line', async () => {

@@ -10,6 +10,12 @@ describe('hairline turn pieces', () => {
     expect(textOf(userMessage('fix the refresh race', ctxOf()))).toBe('❯fix the refresh race')
   })
 
+  test('a very long prompt is clipped and keeps its line breaks', async () => {
+    const text = textOf(userMessage('first line\n' + 'x'.repeat(20_000), ctxOf()))
+    expect(text.length).toBeLessThan(5_000)
+    expect(text).toContain('first line\n')
+  })
+
   test('the receipt sums up the turn', async () => {
     const text = textOf(receipt({ durationMs: 134_000, stats: { turn: 7, files: ['/w/a.ts', '/w/b.ts'], add: 103, del: 10, contextPercent: 41.2 } }, ctxOf()))
     expect(text).toContain('Turn 7')
@@ -37,6 +43,10 @@ describe('hairline turn pieces', () => {
     expect(liveStateOf('thinking', undefined, 1_000, '/work')).toEqual({ mode: 'thinking', detail: '', elapsedMs: 1_000 })
     expect(liveStateOf('responding', undefined, 0, '/work').mode).toBe('writing')
     expect(liveStateOf('tool-use', { tool: 'Read', input: { file_path: '/work/src/a.ts' }, startedAt: 0 }, 0, '/work')).toEqual({ mode: 'running', detail: 'Read src/a.ts', elapsedMs: 0 })
+  })
+
+  test('a status message from Claude Code replaces the detail', async () => {
+    expect(liveStateOf('requesting', undefined, 0, '/work', 'Retrying in 8s (attempt 2/10)').detail).toBe('Retrying in 8s (attempt 2/10)')
   })
 
   test('the terminal live line animates through rasters', async () => {

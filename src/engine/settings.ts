@@ -95,6 +95,16 @@ export function toggled(s: Settings, id: IngredientId): Settings {
   return { ...s, ingredients: { ...s.ingredients, [id]: !s.ingredients[id] } }
 }
 
+/** The user's saved layer with only the look changed. */
+export function changedLook(layer: SettingsLayer, look: LookId): SettingsLayer {
+  return { ...layer, look }
+}
+
+/** The user's saved layer with only one ingredient changed. */
+export function changedIngredient(layer: SettingsLayer, id: IngredientId, value: boolean): SettingsLayer {
+  return { ...layer, ingredients: { ...(layer.ingredients ?? {}), [id]: value } }
+}
+
 /** What the picker saves: the full choice, as a layer. */
 export function choiceOf(s: Settings): SettingsLayer {
   return { look: s.look, ingredients: { ...s.ingredients } }

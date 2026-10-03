@@ -40,14 +40,30 @@ function clip(text: string, max: number): string {
   return text.length > max ? text.slice(0, Math.max(0, max - 1)) + '…' : text
 }
 
-/** The first non-empty line, trimmed and cut to `max` characters. */
+// Terminal escape sequences: OSC (titles, hyperlinks) and CSI (colors, cursor moves).
+const OSC = /\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g
+const CSI = /\x1b\[[0-?]*[ -/]*[@-~]/g
+const OTHER_ESC = /\x1b[@-_]?/g
+
+/**
+ * Text that is safe to draw: no escape sequences or control characters, tabs
+ * as two spaces, at most `max` characters. Claude Code refuses a drawing whose
+ * text holds a control character or runs past 10,000 characters.
+ */
+export function printable(text: string, max: number, options: { keepNewlines?: boolean } = {}): string {
+  let out = text.replace(OSC, '').replace(CSI, '').replace(OTHER_ESC, '').replace(/\t/g, '  ').replace(/\r\n?/g, '\n')
+  out = options.keepNewlines ? out.replace(/[\x00-\x09\x0b-\x1f\x7f]/g, '') : out.replace(/\n/g, ' ').replace(/[\x00-\x1f\x7f]/g, '')
+  return clip(out, max)
+}
+
+/** The first non-empty line, made printable and cut to `max` characters. */
 export function oneLine(text: string, max: number): string {
-  const line = text.split('\n').map(l => l.trim()).find(l => l !== '') ?? ''
+  const line = text.split(/\r?\n/).map(l => printable(l, Number.MAX_SAFE_INTEGER).trim()).find(l => l !== '') ?? ''
   return clip(line, max)
 }
 
-/** The last non-empty line, trimmed and cut to `max` characters. */
+/** The last non-empty line, made printable and cut to `max` characters. */
 export function lastLine(text: string, max: number): string {
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '')
+  const lines = text.split(/\r?\n/).map(l => printable(l, Number.MAX_SAFE_INTEGER).trim()).filter(l => l !== '')
   return clip(lines[lines.length - 1] ?? '', max)
 }
