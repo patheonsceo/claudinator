@@ -417,7 +417,7 @@ export const register: Register = (on, opts) => {
 
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
     if (e.component !== 'AssistantMessage') return next(e)
-    Model.assistantSeen(model, e.requestId)
+    Model.assistantSeen(model, e.requestId, await $.clock.now())
     const settings = await read($, settingsAtom)
     const marks = Model.marksOf(model, e.requestId)
     if (!LOOKS[settings.look] || !settings.ingredients.footnotes || marks.length === 0) return next(e)

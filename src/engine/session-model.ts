@@ -57,6 +57,10 @@ export type SessionModel = {
   changeIndex: Map<string, number>
   lastAssistantId: string | null
   marks: Map<string, number[]>
+  /** Reply blocks already drawn: an old one drawn again never takes new footnotes. */
+  seenReplies: Set<string>
+  /** Last start or end of a turn or tool call, to tell a reply that is streaming now from an old one. */
+  lastActivityAt: number
   noteOfTool: Map<string, number>
   waiting: { id: string; tool: string; input: unknown; since: number } | null
 }
@@ -89,6 +93,8 @@ export function createModel(): SessionModel {
     changeIndex: new Map(),
     lastAssistantId: null,
     marks: new Map(),
+    seenReplies: new Set(),
+    lastActivityAt: Number.NEGATIVE_INFINITY,
     noteOfTool: new Map(),
     waiting: null,
   }
@@ -106,6 +112,8 @@ export function startTurn(m: SessionModel, now: number): void {
   m.turnStartedAt = now
   m.current = { ...emptyStats(m.turn), byFile: [], toolCount: 0, toolsMs: 0, waitingMs: 0, notes: [] }
   m.lastAssistantId = null
+  m.marks.delete('')
+  m.lastActivityAt = now
   const record: TurnRecord = { turn: m.turn, prompt: m.pendingPrompt, startedAt: now, add: 0, del: 0, files: 0 }
   if (m.pendingRowId !== undefined) record.userRowId = m.pendingRowId
   m.turns.push(record)
@@ -114,19 +122,22 @@ export function startTurn(m: SessionModel, now: number): void {
 }
 
 /** A reply block drawn while the turn runs; footnotes that follow attach to it. */
-export function assistantSeen(m: SessionModel, requestId: string): void {
-  if (m.isWorking && !m.marks.has(requestId)) {
-    m.lastAssistantId = requestId
-    // Calls made before any reply text this turn belong to the first block that follows.
-    const early = m.marks.get('') ?? []
-    m.marks.delete('')
-    m.marks.set(requestId, early)
-  }
+export function assistantSeen(m: SessionModel, requestId: string, now: number): void {
+  if (m.seenReplies.has(requestId)) return
+  m.seenReplies.add(requestId)
+  // Only a block that appears during a turn, right after activity, is this turn's reply.
+  if (!m.isWorking || now - m.lastActivityAt > BIND_WINDOW_MS) return
+  m.lastAssistantId = requestId
+  // Calls made before any reply text this turn belong to the first block that follows.
+  const early = m.marks.get('') ?? []
+  m.marks.delete('')
+  m.marks.set(requestId, early)
 }
 
 export function toolStarted(m: SessionModel, id: string, tool: string, input: unknown, now: number, isFootnoted = false): void {
   m.toolTurn.set(id, m.turn)
   m.toolStart.set(id, now)
+  m.lastActivityAt = now
   m.running.set(id, { tool, input, startedAt: now })
   if (isChangeTool(tool)) {
     let count = 0
@@ -150,6 +161,7 @@ export function toolPrompted(m: SessionModel, id: string): void {
 export function toolFinished(m: SessionModel, id: string, tool: string, input: unknown, now: number, isError: boolean): void {
   const start = m.toolStart.get(id)
   const ms = start === undefined ? undefined : Math.max(0, now - start)
+  m.lastActivityAt = now
   if (ms !== undefined && !m.prompted.has(id)) m.toolMs.set(id, ms)
   m.running.delete(id)
   if (m.waiting?.id === id) m.waiting = null
