@@ -10,6 +10,10 @@ describe('format', () => {
     expect(splitPath('', '/work')).toEqual({ dir: '', base: '' })
   })
 
+  test('splitPath never lets escape codes through', async () => {
+    expect(splitPath('/work/s\x1b[31mrc/a\x07.ts', '/work')).toEqual({ dir: 'src/', base: 'a.ts' })
+  })
+
   test('formatDuration uses tenths under ten seconds, then seconds and minutes', async () => {
     expect(formatDuration(150)).toBe('0.2s')
     expect(formatDuration(3_840)).toBe('3.8s')

@@ -69,6 +69,10 @@ describe('tool-facts', () => {
     expect(factsOf('Read', { file_path: '/w/a\x07.ts' }).target).toBe('/w/a.ts')
   })
 
+  test('a change records a clean file path', async () => {
+    expect(changeOf('Edit', { file_path: '/w/a\x1b]0;x\x07.ts', old_string: 'a', new_string: 'b' })?.file).toBe('/w/a.ts')
+  })
+
   test('tools with long names get a short verb', async () => {
     expect(factsOf('TodoWrite', { todos: [{ content: 'Fix the cart', status: 'in_progress' }, { content: 'b', status: 'pending' }] })).toMatchObject({ verb: 'Todos', target: 'Fix the cart' })
     expect(factsOf('ExitPlanMode', {}).verb).toBe('Plan')

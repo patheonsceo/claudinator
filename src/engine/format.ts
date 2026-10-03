@@ -1,10 +1,11 @@
 /** Calls at or above this many milliseconds count as slow. */
 export const SLOW_MS = 3000
 
-/** Splits a path into its folder and file name, relative to `cwd` when inside it. */
+/** Splits a path into its folder and file name, relative to `cwd` when inside it. Always printable. */
 export function splitPath(path: string, cwd = ''): { dir: string; base: string } {
   const root = cwd === '' ? '' : cwd.endsWith('/') ? cwd : cwd + '/'
-  const p = root !== '' && path.startsWith(root) ? path.slice(root.length) : path
+  const clean = printable(path, 1000)
+  const p = root !== '' && clean.startsWith(root) ? clean.slice(root.length) : clean
   const i = p.lastIndexOf('/')
   return i < 0 ? { dir: '', base: p } : { dir: p.slice(0, i + 1), base: p.slice(i + 1) }
 }
