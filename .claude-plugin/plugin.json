@@ -1,7 +1,7 @@
 {
   "name": "claudinator",
   "displayName": "Claudinator",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Give Claude Code a glow-up: switchable looks and mixable ingredients for tool calls, the thinking line and turn receipts. Draws locally, makes no network requests.",
   "author": {
     "name": "patheonsceo",
