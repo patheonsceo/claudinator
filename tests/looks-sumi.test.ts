@@ -138,6 +138,10 @@ describe('sumi groups, quiet and results', () => {
     expect(text).toBe('· · · ·4 steps')
   })
 
+  test('a group of one draws as its own row', async () => {
+    expect(textOf(SUMI.toolGroup([rowOf('Read', { file_path: '/w/cart.js' })], ctxOf()))).toBe('·read')
+  })
+
   test('a failed call in a group turns its dot into a cross', async () => {
     const rows = [rowOf('Read', { file_path: '/w/a' }), rowOf('Bash', { command: 'npm test' }, { isErrored: true })]
     const tree = SUMI.toolGroup(rows, ctxOf())

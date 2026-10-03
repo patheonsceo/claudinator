@@ -82,6 +82,9 @@ export function toolRow(row: ToolRow, ctx: Ctx): RenderElement {
 
 /** A folded run: one dot per call (a cross where one failed), then a faint count. */
 export function toolGroup(rows: ToolRow[], ctx: Ctx): RenderElement {
+  // A group of one says more as its own row: `·  read`, not `·  1 step`.
+  const only = rows.length === 1 ? rows[0] : undefined
+  if (only) return toolRow(only, ctx)
   const max = ctx.columns < NARROW_COLUMNS ? 8 : 12
   const marks: RenderElement[] = []
   rows.slice(0, max).forEach((r, i) => {
