@@ -124,6 +124,8 @@ export function projectLayerOf(raw: unknown): SettingsLayer {
   const layer = layerOf(raw)
   const ingredients = { ...(layer.ingredients ?? {}) }
   for (const id of HIDING_INGREDIENTS) delete ingredients[id]
+  // Nor may it silence the call for your attention: only you turn that off.
+  if (ingredients.attention === false) delete ingredients.attention
   return { ...compact(layer.look, ingredients), fromProject: true }
 }
 

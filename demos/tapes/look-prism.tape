@@ -6,7 +6,7 @@ Source demos/themes/prism.tape
 Hide
 Type "cd demos/fixture && CLAUDE_CODE_NO_FLICKER=1 claude --plugin-dir ../.. --model haiku --dangerously-skip-permissions --settings ../themes/prism.settings.json" Enter
 Sleep 6s
-Type "/look use PR-46D"
+Type "/look use PR-460"
 Sleep 800ms
 Enter
 Sleep 1s

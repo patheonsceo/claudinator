@@ -28,13 +28,19 @@ describe('attention ladder', () => {
   test('notifications and sounds use fixed system programs, with safe text', async () => {
     const body = '-u critical " & do shell script "rm -rf ~" & "\x07'
     const cmds = notifyCommands('Claude needs you', body)
-    expect(cmds[0], 'options end before the text').toEqual(['notify-send', '--app-name=Claudinator', '--', 'Claude needs you', '-u critical " & do shell script "rm -rf ~" & "'])
+    expect(cmds[0], 'options end before the text').toEqual(['notify-send', '--app-name=Claudinator', '--', 'Claude needs you', '-u critical " &amp; do shell script "rm -rf ~" &amp; "'])
     const osa = cmds[1] ?? []
     expect(osa[0]).toBe('osascript')
     const script = osa.filter((_, i) => osa[i - 1] === '-e').join('\n')
     expect(script, 'the script never contains the text').not.toContain('rm -rf')
     expect(osa.slice(-2), 'the text arrives as plain arguments').toEqual(['Claude needs you', '-u critical " & do shell script "rm -rf ~" & "'])
     expect(soundCommands().map(c => c[0])).toEqual(['pw-play', 'paplay', 'afplay'])
+  })
+
+  test('notification servers that read markup see the text as plain text', async () => {
+    const [send] = notifyCommands('Claude <needs> you', 'Run a && b <i>now</i>')
+    // The notification spec reads markup in the body only.
+    expect(send?.slice(-2)).toEqual(['Claude <needs> you', 'Run a &amp;&amp; b &lt;i&gt;now&lt;/i&gt;'])
   })
 
   test('light themes are told apart from dark ones', async () => {

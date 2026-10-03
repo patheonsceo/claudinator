@@ -4,7 +4,7 @@ import { DEFAULT_SETTINGS } from '../src/engine/settings'
 import { pickerView } from '../src/panes/picker'
 import { TERMINAL_ELS, textOf } from './fixtures'
 
-const info = { isFullscreen: true, hasProjectFile: false, shareCode: 'HL-1F3' }
+const info = { isFullscreen: true, hasProjectFile: false, shareCode: 'HL-43H' }
 const noop = { setLook: () => {}, toggle: () => {}, applyCombo: () => {} }
 
 function find(tree: unknown, key: string): Record<string, unknown> | undefined {
@@ -52,7 +52,7 @@ describe('picker', () => {
     ;(find(tree, 'combo-doof')?.onPress as () => void)()
     expect(applied).toEqual(['doof'])
     expect(find(tree, 'combo-doof')?.hotkey).toBe('x')
-    expect(textOf(tree)).toContain('HL-1F3')
+    expect(textOf(tree)).toContain('HL-43H')
   })
 
   test('the footer explains the classic layout', async () => {

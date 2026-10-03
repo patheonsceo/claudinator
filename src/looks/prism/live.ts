@@ -60,7 +60,7 @@ export function prismCells(word: string, frame: number): string {
 }
 
 export function clockCells(ms: number): string {
-  return encodeCells([...clockLabel(ms).padStart(CLOCK_COLUMNS)].map(char => ({ char, fg: GRAY })))
+  return encodeCells([...clockLabel(ms).padStart(CLOCK_COLUMNS).slice(-CLOCK_COLUMNS)].map(char => ({ char, fg: GRAY })))
 }
 
 export function liveFrames(state: LiveState, frame: number): LiveFrame[] {

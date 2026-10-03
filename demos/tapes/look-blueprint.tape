@@ -6,7 +6,7 @@ Source demos/themes/blueprint.tape
 Hide
 Type "cd demos/fixture && CLAUDE_CODE_NO_FLICKER=1 claude --plugin-dir ../.. --model haiku --dangerously-skip-permissions --settings ../themes/blueprint.settings.json" Enter
 Sleep 6s
-Type "/look use BP-4JN"
+Type "/look use BP-4J0"
 Sleep 800ms
 Enter
 Sleep 1s
