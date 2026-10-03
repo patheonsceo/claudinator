@@ -16,9 +16,9 @@ A combo sets a look and a full set of ingredients at once. Apply one from the `/
 
 ## Share codes
 
-A share code carries your look and ingredients in six characters, such as `HL-1F3`: two letters for the look, two for the ingredients, and a check character that catches typos.
+A share code carries your look and ingredients in six characters, such as `HL-43H`: two letters for the look, two for the ingredients, and a check character that catches typos.
 
 - `/look share` shows your current code. The picker shows it too.
-- `/look use HL-1F3` applies a code. Codes ignore case.
+- `/look use HL-43H` applies a code. Codes ignore case.
 
 A share code never carries sound or notification settings; those stay yours.
