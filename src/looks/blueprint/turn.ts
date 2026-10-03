@@ -2,7 +2,7 @@ import type { RenderElement } from 'claude-code'
 
 import { clockLabel, printable } from '../../engine/format'
 import { tone } from '../../engine/palette'
-import { inatorQuip, noteText, superscript, timeStripRow } from '../common'
+import { inatorQuip, noteText, superscript, stripColors, timeStripRow } from '../common'
 import type { Ctx, FootnoteData, HeadlineData, ReceiptData } from '../look'
 import { C, NARROW_COLUMNS, fixed, rule, shrink, txt } from './style'
 
@@ -178,7 +178,7 @@ export function receipt(data: ReceiptData, ctx: Ctx): RenderElement {
     signature,
   ]
   if (data.timeStrip && ctx.columns >= NARROW_COLUMNS) {
-    children.push(timeStripRow(ctx, data.timeStrip, { glyph: '▆', indent: 0, thinking: C.cyan, tools: C.ink, waiting: C.err }))
+    children.push(timeStripRow(ctx, data.timeStrip, { ...stripColors('blueprint', ctx.isDark), indent: 0 }))
   }
   return ctx.els.Box({ flexDirection: 'column', children })
 }

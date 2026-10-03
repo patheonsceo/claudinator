@@ -251,7 +251,7 @@ describe('thinking time', () => {
     await clock.advance(3_000)
     // Claude Code leaves permission waits out of its duration; the strip measures the turn itself.
     await $.turn.complete({ turnId: 't1', durationMs: 1_000, answer: 'ok', isAborted: false, reason: 'answer' })
-    expect(textOf(await $.ui.render(turnDurationInput(1_000)))).toContain('thinking 3.0s')
+    expect(textOf(await $.ui.render(turnDurationInput(1_000)))).toContain('thinking 0:03')
   })
 })
 
@@ -283,5 +283,26 @@ describe('narrow terminals and switched-off ingredients', () => {
     const off = ctxOf({ settings: resolveSettings([{ look: 'prism', ingredients: { fileColors: false } }]) })
     expect(colors(PRISM.toolRow(row('a.ts'), on))).not.toBe(colors(PRISM.toolRow(row('zebra.py'), on)))
     expect(colors(PRISM.toolRow(row('a.ts'), off))).toBe(colors(PRISM.toolRow(row('zebra.py'), off)))
+  })
+})
+
+describe('one time strip, just above the prompt', () => {
+  test('only the newest receipt carries the strip, and only while Claude is idle', async ($, on) => {
+    const { saved, clock } = startsSession(on)
+    saved.set('settings', { ingredients: { timeStrip: true } })
+    on('turn.start', ($, e) => ({ turnId: e.turnId }))
+    on('turn.complete', () => ({ text: '' }))
+    await $.session.start(SESSION)
+    const receiptOf = (id: string) => ({ ...turnDurationInput(3_000), requestId: id })
+    for (const [turn, id] of [['t1', 'r1'], ['t2', 'r2']] as const) {
+      await $.turn.start({ turnId: turn, text: 'x' })
+      await clock.advance(3_000)
+      await $.turn.complete({ turnId: turn, durationMs: 3_000, answer: 'ok', isAborted: false, reason: 'answer' })
+      await $.ui.render(receiptOf(id))
+    }
+    expect(textOf(await $.ui.render(receiptOf('r1')))).not.toContain('thinking')
+    expect(textOf(await $.ui.render(receiptOf('r2')))).toContain('thinking')
+    await $.turn.start({ turnId: 't3', text: 'x' })
+    expect(textOf(await $.ui.render(receiptOf('r2')))).not.toContain('thinking')
   })
 })

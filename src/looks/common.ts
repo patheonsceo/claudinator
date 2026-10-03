@@ -1,6 +1,6 @@
 import type { RenderElement } from 'claude-code'
 
-import { formatDuration, splitPath } from '../engine/format'
+import { clockLabel, formatDuration, splitPath } from '../engine/format'
 import { tone } from '../engine/palette'
 import type { TurnStats } from '../engine/session-model'
 import { factsOf } from '../engine/tool-facts'
@@ -43,34 +43,65 @@ export function timeStripSegments(data: TimeStripData, width: number): { thinkin
   return { thinking: Math.max(0, width - tools - waiting), tools, waiting }
 }
 
+export type StripColors = { thinking: string; tools: string; waiting: string }
+
+/** Each look's strip colors, dark and light: three that never blur together. */
+const STRIP_COLORS: Record<'hairline' | 'broadsheet' | 'mission' | 'prism' | 'sumi' | 'blueprint', { dark: StripColors; light: StripColors }> = {
+  hairline: { dark: { thinking: '#a0a3ff', tools: '#6fd0d6', waiting: '#ff7a85' }, light: { thinking: '#5559de', tools: '#137f86', waiting: '#cf3747' } },
+  broadsheet: { dark: { thinking: '#e3b65c', tools: '#8fbfb4', waiting: '#ef8b73' }, light: { thinking: '#94680f', tools: '#2f6f68', waiting: '#b2432c' } },
+  mission: { dark: { thinking: '#6fd6c3', tools: '#ffb347', waiting: '#ff6b57' }, light: { thinking: '#11796a', tools: '#b26a00', waiting: '#c23a28' } },
+  prism: { dark: { thinking: '#ff8ab8', tools: '#b9a8ff', waiting: '#ffc27a' }, light: { thinking: '#d63f79', tools: '#5b4bff', waiting: '#b5651d' } },
+  sumi: { dark: { thinking: '#8aa4e0', tools: '#a9b8a0', waiting: '#e0907a' }, light: { thinking: '#2d4f9e', tools: '#56704a', waiting: '#b2432c' } },
+  blueprint: { dark: { thinking: '#7fd4ff', tools: '#e6f0ff', waiting: '#ff8a7a' }, light: { thinking: '#0e7fa8', tools: '#0f2d5c', waiting: '#c2334a' } },
+}
+
+export function stripColors(look: keyof typeof STRIP_COLORS, isDark: boolean): StripColors {
+  return STRIP_COLORS[look][isDark ? 'dark' : 'light']
+}
+
 /**
- * A time strip as one row of colored blocks and a legend. Looks pass their
- * own glyph and colors (theme tokens or hex), or take these defaults.
+ * A time strip as the lookbook draws it: a bar of gridded cells, one part
+ * each for thinking, tools and waiting on you with a gap between them, and
+ * the legend on its own row underneath.
  */
-export function timeStripRow(
-  ctx: Ctx,
-  data: TimeStripData,
-  style: { glyph?: string; indent?: number; thinking?: string; tools?: string; waiting?: string } = {},
-): RenderElement {
+export function timeStripRow(ctx: Ctx, data: TimeStripData, style: StripColors & { indent?: number }): RenderElement {
   const { Box, Text } = ctx.els
-  const glyph = style.glyph ?? '▆'
-  const colors = { thinking: style.thinking ?? 'suggestion', tools: style.tools ?? 'warning', waiting: style.waiting ?? 'error' }
-  const width = Math.max(10, Math.min(40, ctx.columns - 50))
+  const indent = style.indent ?? 3
+  const width = Math.max(10, Math.min(40, ctx.columns - indent - 4))
   const seg = timeStripSegments(data, width)
-  const part = (color: string, n: number): RenderElement => Text({ color: tone(color, ctx.fade), children: glyph.repeat(n) })
+  const parts = (
+    [
+      [style.thinking, seg.thinking],
+      [style.tools, seg.tools],
+      [style.waiting, seg.waiting],
+    ] as const
+  ).filter(([, n]) => n > 0)
+  const bar: RenderElement[] = []
+  parts.forEach(([color, n], i) => {
+    if (i > 0) bar.push(Text({ children: ' ' }))
+    bar.push(Text({ color: tone(color, ctx.fade), children: '■'.repeat(n) }))
+  })
   const legend = (color: string, label: string, ms: number): RenderElement[] => [
     Text({ color: tone(color, ctx.fade), children: '■' }),
-    Text({ color: tone('inactive', ctx.fade), children: `${label} ${formatDuration(ms)}` }),
+    Text({ color: tone('inactive', ctx.fade), children: `${label} ${clockLabel(ms)}` }),
   ]
   return Box({
-    flexDirection: 'row',
-    columnGap: 1,
-    paddingLeft: style.indent ?? 3,
+    flexDirection: 'column',
+    paddingLeft: indent,
     children: [
-      Text({ children: [part(colors.thinking, seg.thinking), part(colors.tools, seg.tools), part(colors.waiting, seg.waiting)] }),
-      ...legend(colors.thinking, 'thinking', data.thinkingMs),
-      ...legend(colors.tools, 'tools', data.toolsMs),
-      ...(data.waitingMs > 0 ? legend(colors.waiting, 'waiting on you', data.waitingMs) : []),
+      Box({ height: 1, overflow: 'hidden', children: [Text({ children: bar })] }),
+      Box({
+        flexDirection: 'row',
+        columnGap: 1,
+        height: 1,
+        overflow: 'hidden',
+        children: [
+          ...legend(style.thinking, 'thinking', data.thinkingMs),
+          Text({ children: ' ' }),
+          ...legend(style.tools, 'tools', data.toolsMs),
+          ...(data.waitingMs > 0 ? [Text({ children: ' ' }), ...legend(style.waiting, 'waiting on you', data.waitingMs)] : []),
+        ],
+      }),
     ],
   })
 }
