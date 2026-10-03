@@ -2,6 +2,9 @@
   "name": "Claudinator Broadsheet Dark",
   "base": "dark",
   "overrides": {
+    "composerSidebarBackground": "#1b1814",
+    "bashMessageBackgroundColor": "#1b1814",
+    "memoryBackgroundColor": "#1b1814",
     "claude": "#e3b65c",
     "claudeShimmer": "#efcd8a",
     "text": "#ece5d8",

@@ -2,6 +2,9 @@
   "name": "Claudinator Blueprint Light",
   "base": "light",
   "overrides": {
+    "composerSidebarBackground": "#e8f0fc",
+    "bashMessageBackgroundColor": "#e8f0fc",
+    "memoryBackgroundColor": "#e8f0fc",
     "claude": "#0f2d5c",
     "claudeShimmer": "#3a5a8a",
     "text": "#0f2d5c",

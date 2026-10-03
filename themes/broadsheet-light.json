@@ -2,6 +2,9 @@
   "name": "Claudinator Broadsheet Light",
   "base": "light",
   "overrides": {
+    "composerSidebarBackground": "#efede8",
+    "bashMessageBackgroundColor": "#efede8",
+    "memoryBackgroundColor": "#efede8",
     "claude": "#94680f",
     "claudeShimmer": "#b0832a",
     "text": "#25221d",

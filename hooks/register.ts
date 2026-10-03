@@ -390,7 +390,7 @@ export const register: Register = (on, opts) => {
     return pickerView(
       $.ui.resolve(e),
       settings,
-      { isFullscreen, hasProjectFile: Object.keys(project).some(k => k !== 'fromProject'), shareCode: encodeShareCode(settings) },
+      { isFullscreen, hasProjectFile: Object.keys(project).some(k => k !== 'fromProject'), shareCode: encodeShareCode(settings), columns: e.props.bodyColumns, isDark },
       {
         setLook: id => {
           void saveChange($, layer => changedLook(layer, id))
