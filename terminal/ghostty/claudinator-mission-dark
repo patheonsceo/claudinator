@@ -1,0 +1,22 @@
+# Claudinator Mission Control Dark
+palette = 0=#161a18
+palette = 1=#ff6b57
+palette = 2=#93d46b
+palette = 3=#ffb347
+palette = 4=#6fa8dc
+palette = 5=#d48fbf
+palette = 6=#6fd6c3
+palette = 7=#c3c8bf
+palette = 8=#4a524b
+palette = 9=#ff8d7d
+palette = 10=#b0e38f
+palette = 11=#ffc978
+palette = 12=#93c0e8
+palette = 13=#e3abd1
+palette = 14=#96e3d5
+palette = 15=#f2f4ef
+background = #0c0e0d
+foreground = #d8dcd5
+cursor-color = #ffb347
+selection-background = #263029
+selection-foreground = #d8dcd5

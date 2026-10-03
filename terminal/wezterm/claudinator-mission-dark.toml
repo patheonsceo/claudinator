@@ -1,0 +1,13 @@
+[colors]
+foreground = "#d8dcd5"
+background = "#0c0e0d"
+cursor_bg = "#ffb347"
+cursor_border = "#ffb347"
+cursor_fg = "#0c0e0d"
+selection_bg = "#263029"
+selection_fg = "#d8dcd5"
+ansi = ["#161a18", "#ff6b57", "#93d46b", "#ffb347", "#6fa8dc", "#d48fbf", "#6fd6c3", "#c3c8bf"]
+brights = ["#4a524b", "#ff8d7d", "#b0e38f", "#ffc978", "#93c0e8", "#e3abd1", "#96e3d5", "#f2f4ef"]
+
+[metadata]
+name = "Claudinator Mission Control Dark"

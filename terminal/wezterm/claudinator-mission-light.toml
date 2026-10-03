@@ -1,0 +1,13 @@
+[colors]
+foreground = "#191b19"
+background = "#f3f4f1"
+cursor_bg = "#b26a00"
+cursor_border = "#b26a00"
+cursor_fg = "#f3f4f1"
+selection_bg = "#d3e5e0"
+selection_fg = "#191b19"
+ansi = ["#2a2d2a", "#c23a28", "#3a7c1c", "#b26a00", "#2c5f9e", "#9a3f7a", "#11796a", "#d8dbd4"]
+brights = ["#636961", "#d9533f", "#4f9a2c", "#cc8410", "#4277b8", "#b5579a", "#1f988a", "#ffffff"]
+
+[metadata]
+name = "Claudinator Mission Control Light"
