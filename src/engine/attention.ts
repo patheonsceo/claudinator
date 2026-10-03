@@ -20,14 +20,17 @@ export function ladderActions(waitedMs: number, settings: Settings, state: Ladde
   return actions
 }
 
-/** Programs to try, in order, for a desktop notification: Linux, then macOS. Arguments are fixed; no shell. */
+/**
+ * Programs to try, in order, for a desktop notification: Linux, then macOS.
+ * The text always travels as plain arguments, never inside a script or as an
+ * option: `--` ends notify-send's options, and AppleScript reads it from argv.
+ */
 export function notifyCommands(title: string, body: string): string[][] {
   const t = printable(title, 80)
   const b = printable(body, 160)
-  const forAppleScript = (s: string): string => s.replace(/["\\]/g, '')
   return [
-    ['notify-send', '--app-name=Claudinator', t, b],
-    ['osascript', '-e', `display notification "${forAppleScript(b)}" with title "${forAppleScript(t)}"`],
+    ['notify-send', '--app-name=Claudinator', '--', t, b],
+    ['osascript', '-e', 'on run argv', '-e', 'display notification (item 2 of argv) with title (item 1 of argv)', '-e', 'end run', t, b],
   ]
 }
 

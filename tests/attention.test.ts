@@ -26,10 +26,14 @@ describe('attention ladder', () => {
   })
 
   test('notifications and sounds use fixed system programs, with safe text', async () => {
-    const cmds = notifyCommands('Claude needs you', 'Approve "rm" \\ now\x07')
-    expect(cmds[0]).toEqual(['notify-send', '--app-name=Claudinator', 'Claude needs you', 'Approve "rm" \\ now'])
-    expect(cmds[1]?.[0]).toBe('osascript')
-    expect(cmds[1]?.[2]).not.toContain('"rm"')
+    const body = '-u critical " & do shell script "rm -rf ~" & "\x07'
+    const cmds = notifyCommands('Claude needs you', body)
+    expect(cmds[0], 'options end before the text').toEqual(['notify-send', '--app-name=Claudinator', '--', 'Claude needs you', '-u critical " & do shell script "rm -rf ~" & "'])
+    const osa = cmds[1] ?? []
+    expect(osa[0]).toBe('osascript')
+    const script = osa.filter((_, i) => osa[i - 1] === '-e').join('\n')
+    expect(script, 'the script never contains the text').not.toContain('rm -rf')
+    expect(osa.slice(-2), 'the text arrives as plain arguments').toEqual(['Claude needs you', '-u critical " & do shell script "rm -rf ~" & "'])
     expect(soundCommands().map(c => c[0])).toEqual(['pw-play', 'paplay', 'afplay'])
   })
 
