@@ -5,6 +5,8 @@ export const SLOW_MS = 3000
 export function splitPath(path: string, cwd = ''): { dir: string; base: string } {
   const root = cwd === '' ? '' : cwd.endsWith('/') ? cwd : cwd + '/'
   const clean = printable(path, 1000)
+  // The project folder itself reads as ./, not as a file named after the folder.
+  if (root !== '' && (clean === root || clean + '/' === root)) return { dir: '', base: './' }
   const p = root !== '' && clean.startsWith(root) ? clean.slice(root.length) : clean
   const i = p.lastIndexOf('/')
   return i < 0 ? { dir: '', base: p } : { dir: p.slice(0, i + 1), base: p.slice(i + 1) }

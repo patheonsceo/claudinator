@@ -36,7 +36,8 @@ export type ResultRow = { tool: string; output: unknown; isErrored: boolean }
 
 export type LiveMode = 'thinking' | 'writing' | 'running'
 /** `inator` swaps in -inator words; animated words must keep the same width across frames. */
-export type LiveState = { mode: LiveMode; detail: string; elapsedMs: number; inator?: boolean }
+/** What Claude is doing now. `detail` is the target alone; `activity` names the step (Reading, Running) while a tool runs. */
+export type LiveState = { mode: LiveMode; detail: string; activity?: string; elapsedMs: number; inator?: boolean }
 export type LiveFrame = { key: string; columns: number; cells: string }
 
 /** A finished turn's title, drawn above its prompt when Headlines is on. */

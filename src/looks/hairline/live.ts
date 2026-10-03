@@ -17,14 +17,31 @@ const CLOCK_COLUMNS = 5
 export function liveStateOf(spinnerMode: string, running: Running | undefined, elapsedMs: number, cwd: string, message: string | null = null): LiveState {
   const mode: LiveMode = spinnerMode === 'responding' ? 'writing' : spinnerMode === 'tool-use' || spinnerMode === 'tool-input' ? 'running' : 'thinking'
   let detail = ''
+  let activity: string | undefined
   if (mode === 'running' && running) {
     const facts = factsOf(running.tool, running.input)
     const { dir, base } = facts.isPath ? splitPath(facts.target, cwd) : { dir: '', base: facts.target }
-    detail = `${facts.verb} ${dir}${base}`.trim()
+    detail = `${dir}${base}`.trim()
+    activity = ACTIVITIES[facts.verb] ?? 'Running'
   }
   // Claude Code's own status (a retry, a backoff, compacting) always wins over our detail.
   if (message) detail = printable(message, 200)
-  return { mode, detail, elapsedMs }
+  return activity === undefined ? { mode, detail, elapsedMs } : { mode, detail, activity, elapsedMs }
+}
+
+/** The word for a running step, from its row's verb. */
+const ACTIVITIES: Record<string, string> = {
+  Read: 'Reading',
+  Search: 'Searching',
+  Find: 'Finding',
+  List: 'Listing',
+  Edit: 'Editing',
+  Create: 'Writing',
+  Write: 'Writing',
+  Run: 'Running',
+  Fetch: 'Fetching',
+  Agent: 'Delegating',
+  Todos: 'Planning',
 }
 
 /** Three breathing dots, a space, then the word with a highlight sweeping across it. */
@@ -44,13 +61,13 @@ export function clockCells(ms: number): string {
 }
 
 function wordOf(state: LiveState, frame: number, isInator: boolean): string {
-  return isInator && state.mode === 'thinking' ? inatorWord(frame) : LIVE_WORDS[state.mode]
+  return isInator && state.mode === 'thinking' ? inatorWord(frame) : (state.activity ?? LIVE_WORDS[state.mode])
 }
 
 /** The live frames to blit; -inator words are swapped in by `live` and kept the same width here. */
 export function liveFrames(state: LiveState, frame: number): LiveFrame[] {
   // 'Scheming' is as wide as 'Thinking', so the raster keeps its size in -inator mode.
-  const word = state.inator && state.mode === 'thinking' ? 'Scheming' : LIVE_WORDS[state.mode]
+  const word = state.inator && state.mode === 'thinking' ? 'Scheming' : (state.activity ?? LIVE_WORDS[state.mode])
   return [
     { key: 'cz-pulse', columns: 4 + word.length, cells: pulseCells(word, frame) },
     { key: 'cz-clock', columns: CLOCK_COLUMNS, cells: clockCells(state.elapsedMs) },
