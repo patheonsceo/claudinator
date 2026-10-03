@@ -8,6 +8,8 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { DEFAULT_CODES } from './codes.mjs'
+
 const LOOKS = ['hairline', 'broadsheet', 'mission', 'prism', 'sumi', 'blueprint', 'thermal']
 
 /** Text each look's receipt shows once turn n has finished; recordings wait for it. */
@@ -34,7 +36,8 @@ function start(look, { bypass = true } = {}) {
     'Hide',
     `Type "cd demos/fixture && CLAUDE_CODE_NO_FLICKER=1 claude --plugin-dir ../.. --model haiku${permissions} --settings ../themes/${look}.settings.json" Enter`,
     'Sleep 6s',
-    ...slash(`/look ${look}`),
+    // Pin the exact setup: the plugin store is shared, so never rely on what an earlier session saved.
+    ...slash(`/look use ${DEFAULT_CODES[look]}`),
     'Sleep 1s',
   ]
 }

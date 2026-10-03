@@ -6,7 +6,7 @@ Source demos/themes/thermal.tape
 Hide
 Type "cd demos/fixture && CLAUDE_CODE_NO_FLICKER=1 claude --plugin-dir ../.. --model haiku --dangerously-skip-permissions --settings ../themes/thermal.settings.json" Enter
 Sleep 6s
-Type "/look thermal"
+Type "/look use TH-40N"
 Sleep 800ms
 Enter
 Sleep 1s
