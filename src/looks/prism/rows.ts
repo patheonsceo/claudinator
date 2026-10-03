@@ -20,7 +20,7 @@ function rowChip(ctx: Ctx, facts: ToolFacts, failed: boolean): RenderElement {
   if (failed) return chip(ctx, ` ✕ ${word} `, h.err)
   const label = ` ${GLYPHS[facts.glyph]} ${word} `
   if (facts.glyph === 'agent') return gradientChip(ctx, label)
-  if (facts.isPath && facts.target !== '') return chip(ctx, label, hueOf(ctx, facts.target))
+  if (ctx.settings.ingredients.fileColors && facts.isPath && facts.target !== '') return chip(ctx, label, hueOf(ctx, facts.target))
   return chip(ctx, label, h.neutralBg, h.neutralFg)
 }
 

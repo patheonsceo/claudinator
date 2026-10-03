@@ -74,11 +74,14 @@ function currentSettings(): Settings {
   return resolveSettings([options, project, saved])
 }
 
-function receiptData(settings: Settings, durationMs: number, stats: Model.TurnStats | null): ReceiptData {
+/** The strip and its legend need room; below this width the receipt goes without. */
+const TIME_STRIP_MIN_COLUMNS = 100
+
+function receiptData(settings: Settings, durationMs: number, stats: Model.TurnStats | null, columns: number): ReceiptData {
   const data: ReceiptData = { durationMs, stats, notes: [], timeStrip: null }
   if (stats?.title) data.title = stats.title
   if (settings.ingredients.footnotes && stats?.notes) data.notes = stats.notes
-  if (settings.ingredients.timeStrip && stats && stats.toolsMs !== undefined) {
+  if (settings.ingredients.timeStrip && columns >= TIME_STRIP_MIN_COLUMNS && stats && stats.toolsMs !== undefined) {
     const toolsMs = stats.toolsMs
     const waitingMs = stats.waitingMs ?? 0
     // Claude Code's duration leaves out permission waits, so thinking is measured against the turn's own time.
@@ -436,7 +439,8 @@ export const register: Register = (on, opts) => {
     const look = LOOKS[settings.look]
     if (!look || e.props.hasSurvey) return next(e)
     const waiting = settings.ingredients.attention ? Model.waitingOf(model, await $.clock.now()) : null
-    const ctx = ctxOf(e, $.ui.resolve(e), settings, 0)
+    // The band is as wide as the body beside any docked pane, not the whole terminal.
+    const ctx = ctxOf({ surface: e.surface, viewport: { columns: e.props.bodyColumns } }, $.ui.resolve(e), settings, 0)
     const drawn = look.band({ usage, waiting, isWorking: model.isWorking }, ctx) ?? (waiting ? waitingBand(ctx, waiting) : null)
     if (!drawn) return next(e)
     const others = await next(e)
@@ -516,7 +520,8 @@ export const register: Register = (on, opts) => {
     if (!look) return next(e)
     const stats = Model.receiptFor(model, e.requestId, await $.clock.now())
     const fade = fadeOf(stats?.turn, model.turn, settings.ingredients.recency)
-    return look.receipt(receiptData(settings, e.props.durationMs, stats), ctxOf(e, $.ui.resolve(e), settings, fade))
+    const ctx = ctxOf(e, $.ui.resolve(e), settings, fade)
+    return look.receipt(receiptData(settings, e.props.durationMs, stats, ctx.columns), ctx)
   }).catch(async ($, e, next) => next(e))
 
   on('ui.render', { component: 'Spinner' }, async ($, e, next) => {

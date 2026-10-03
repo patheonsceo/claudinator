@@ -4,12 +4,14 @@ import { waitsOnUser } from '../src/engine/attention'
 import { printable } from '../src/engine/format'
 import * as Model from '../src/engine/session-model'
 import { decodeShareCode, encodeShareCode } from '../src/engine/share-code'
-import { DEFAULT_SETTINGS, projectLayerOf } from '../src/engine/settings'
+import { DEFAULT_SETTINGS, projectLayerOf, resolveSettings } from '../src/engine/settings'
+import { MISSION } from '../src/looks/mission'
+import { PRISM } from '../src/looks/prism'
 import { clockCells as hairlineClock } from '../src/looks/hairline/live'
 import { clockCells as prismClock } from '../src/looks/prism/live'
 import { factsOf, isFootnotable } from '../src/engine/tool-facts'
 import { withMarks } from '../src/looks/common'
-import { SESSION, assistantInput, startsSession, textOf, toolUseInput, turnDurationInput } from './fixtures'
+import { SESSION, assistantInput, ctxOf, startsSession, textOf, toolUseInput, turnDurationInput } from './fixtures'
 
 const read = (file: string) => ({ file_path: file })
 const edit = (file: string) => ({ file_path: file, old_string: 'a', new_string: 'b' })
@@ -250,5 +252,36 @@ describe('thinking time', () => {
     // Claude Code leaves permission waits out of its duration; the strip measures the turn itself.
     await $.turn.complete({ turnId: 't1', durationMs: 1_000, answer: 'ok', isAborted: false, reason: 'answer' })
     expect(textOf(await $.ui.render(turnDurationInput(1_000)))).toContain('thinking 3.0s')
+  })
+})
+
+describe('narrow terminals and switched-off ingredients', () => {
+  test('the time strip stays off below 100 columns', async ($, on) => {
+    const { saved, clock } = startsSession(on)
+    saved.set('settings', { ingredients: { timeStrip: true } })
+    on('turn.start', ($, e) => ({ turnId: e.turnId }))
+    on('turn.complete', () => ({ text: '' }))
+    await $.session.start(SESSION)
+    await $.turn.start({ turnId: 't1', text: 'x' })
+    await clock.advance(3_000)
+    await $.turn.complete({ turnId: 't1', durationMs: 3_000, answer: 'ok', isAborted: false, reason: 'answer' })
+    const narrow = { ...turnDurationInput(3_000), viewport: { columns: 80, rows: 40, isFullscreen: true } }
+    expect(textOf(await $.ui.render(narrow))).not.toContain('thinking')
+  })
+
+  test('Mission’s telemetry stays on one line', async () => {
+    const usage = { contextPercent: 41, rateLimits: [{ kind: 'five_hour', percentUsed: 62, resetsAt: Date.UTC(2026, 9, 3, 16, 40) }], costUsd: 1.84 }
+    const band = MISSION.band({ usage, waiting: null, isWorking: false }, ctxOf({ columns: 60 })) as { props: Record<string, unknown> } | null
+    expect(band?.props.height).toBe(1)
+    expect(band?.props.overflow).toBe('hidden')
+  })
+
+  test('Prism colors its chips by file only with File colors on', async () => {
+    const row = (file: string) => ({ id: file, tool: 'Read', input: { file_path: `/work/${file}` }, isRunning: false, isErrored: false, isInterrupted: false })
+    const colors = (tree: unknown) => [...JSON.stringify(tree).matchAll(/#[0-9a-fA-F]{6}/g)].map(m => m[0]).sort().join()
+    const on = ctxOf({ settings: resolveSettings([{ look: 'prism' }]) })
+    const off = ctxOf({ settings: resolveSettings([{ look: 'prism', ingredients: { fileColors: false } }]) })
+    expect(colors(PRISM.toolRow(row('a.ts'), on))).not.toBe(colors(PRISM.toolRow(row('zebra.py'), on)))
+    expect(colors(PRISM.toolRow(row('a.ts'), off))).toBe(colors(PRISM.toolRow(row('zebra.py'), off)))
   })
 })

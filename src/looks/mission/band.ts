@@ -72,5 +72,6 @@ export function band(data: BandData, ctx: Ctx): RenderElement | null {
     if (i > 0) children.push(txt(ctx, C.faint, '│'))
     children.push(...g)
   })
-  return ctx.els.Box({ flexDirection: 'row', columnGap: 1, children })
+  // One line, always: a narrow body clips the last readings rather than wrapping.
+  return ctx.els.Box({ flexDirection: 'row', columnGap: 1, height: 1, overflow: 'hidden', children })
 }
