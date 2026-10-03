@@ -2,7 +2,7 @@ import type { RenderElement } from 'claude-code'
 
 import { formatDuration, plural, printable, splitPath } from '../../engine/format'
 import { tone } from '../../engine/palette'
-import { bashSummary, changeOf, errorSummary, isChangeTool, pickDiffLines } from '../../engine/tool-facts'
+import { bashSummary, changeOf, errorSummary, factsOf, isChangeTool, pickDiffLines } from '../../engine/tool-facts'
 import type { Change, DiffLine } from '../../engine/tool-facts'
 import type { Ctx, ResultRow, ToolRow } from '../look'
 import { callSegments, groupSegments } from './prose'
@@ -55,7 +55,8 @@ function diffLine(ctx: Ctx, l: DiffLine): RenderElement {
 /** `✎ Edited cart.js in src/`, the counts at the right and, with Mini diffs, a few changed lines below. */
 function changeRow(row: ToolRow, change: Change, ctx: Ctx): RenderElement {
   const failed = row.isErrored || row.isInterrupted
-  const { dir, base } = splitPath(change.file, ctx.cwd)
+  // The path as factsOf made it printable; change.file is the raw input.
+  const { dir, base } = splitPath(factsOf(row.tool, row.input).target, ctx.cwd)
   const verb = row.tool === 'Write' ? ['Wrote', 'Writing', 'write'] : ['Edited', 'Editing', 'edit']
   const lead = failed ? `Tried to ${verb[2]} ` : `${row.isRunning ? verb[1] : verb[0]} `
   const body: RenderElement[] = [it(ctx, failed ? C.err : C.text, lead)]
@@ -88,6 +89,9 @@ export function toolRow(row: ToolRow, ctx: Ctx): RenderElement {
 }
 
 export function toolGroup(rows: ToolRow[], ctx: Ctx): RenderElement {
+  // A group of one reads better as that call's own sentence: `Ran ls.`, not `Ran 1 command.`
+  const only = rows.length === 1 ? rows[0] : undefined
+  if (only && !isChangeTool(only.tool)) return toolRow(only, ctx)
   const failed = rows.filter(r => r.isErrored).length
   const stopped = rows.some(r => r.isInterrupted)
   const running = rows.some(r => r.isRunning)

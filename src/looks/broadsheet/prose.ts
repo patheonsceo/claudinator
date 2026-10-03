@@ -11,9 +11,10 @@ function quoted(text: string): string {
   return `“${oneLine(text, QUOTE_MAX)}”`
 }
 
+/** An MCP tool's own name, made printable: tool names come from servers, not from us. */
 function shortName(tool: string): string {
   const parts = tool.split('__')
-  return parts[parts.length - 1] || tool
+  return oneLine(parts[parts.length - 1] || tool, 60) || 'a tool'
 }
 
 const NUMERALS: Array<[number, string]> = [

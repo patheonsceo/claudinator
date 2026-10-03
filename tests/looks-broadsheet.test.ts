@@ -49,6 +49,11 @@ describe('broadsheet prose', () => {
     expect(sentenceOf(calls, '/work')).toBe('Read 2 files')
   })
 
+  test('a group of one call reads as that call', async () => {
+    const text = textOf(BROADSHEET.toolGroup([row({ tool: 'Bash', input: { command: 'ls' }, durationMs: 400 })], ctxOf()))
+    expect(text).toMatch(/^↳Ran ls\./)
+  })
+
   test('roman numerals for chapter headings', async () => {
     expect(roman(7)).toBe('VII')
     expect(roman(14)).toBe('XIV')
@@ -128,6 +133,32 @@ describe('broadsheet rows', () => {
     for (const tree of trees) expect(JSON.stringify(tree)).not.toContain('\\u001b')
   })
 
+  test('escape and bell bytes from every input and output are stripped', async () => {
+    const bad = '\x1b[31mred\x07'
+    const desktop = ctxOf({ surface: 'desktop', els: DESKTOP_ELS })
+    const trees = [
+      BROADSHEET.toolRow(row({ input: { file_path: '/work/' + bad } }), ctxOf()),
+      BROADSHEET.toolRow(row({ tool: 'Bash', input: { command: bad } }), ctxOf()),
+      BROADSHEET.toolRow(row({ tool: 'Grep', input: { pattern: bad } }), ctxOf()),
+      BROADSHEET.toolRow(row({ tool: 'mcp__srv__' + bad, input: { arg: bad } }), ctxOf()),
+      BROADSHEET.toolRow(row({ tool: 'Edit', input: { file_path: '/work/' + bad + '/' + bad, old_string: bad, new_string: bad + '2' } }), ctxOf({ settings: withDiffs })),
+      BROADSHEET.toolRow(row({ tool: 'Write', input: { file_path: bad, content: bad }, isErrored: true }), ctxOf()),
+      BROADSHEET.toolGroup([row({ input: { file_path: bad } }), row({ tool: 'Grep', input: { pattern: bad } }), row({ tool: 'mcp__x__' + bad, input: {} }), row({ tool: 'Edit', input: { file_path: bad } })], ctxOf()),
+      BROADSHEET.toolResult({ tool: 'Bash', output: { stdout: bad, stderr: bad }, isErrored: false }, ctxOf()),
+      BROADSHEET.toolResult({ tool: 'Bash', output: bad, isErrored: true }, ctxOf()),
+      BROADSHEET.toolResult({ tool: 'Read', output: { error: bad }, isErrored: true }, ctxOf()),
+      BROADSHEET.userMessage(bad, ctxOf()),
+      BROADSHEET.headline({ turn: 2, title: bad }, ctxOf()),
+      BROADSHEET.receipt({ durationMs: 1, title: bad, stats: { turn: 1, files: [bad], add: 1, del: 0 }, notes: [{ n: 1, tool: 'Bash', input: { command: bad } }], timeStrip: null }, ctxOf()),
+      BROADSHEET.live({ mode: 'running', detail: bad, elapsedMs: 0 }, 0, desktop),
+    ]
+    for (const tree of trees) {
+      const json = JSON.stringify(tree)
+      expect(json).not.toContain('\\u001b')
+      expect(json).not.toContain('\\u0007')
+    }
+  })
+
   test('the quiet line is a dim italic aside', async () => {
     expect(textOf(BROADSHEET.quietLine(3, ctxOf()))).toContain('(3 steps omitted)')
     expect(textOf(BROADSHEET.quietLine(1, ctxOf()))).toContain('(1 step omitted)')
@@ -166,6 +197,7 @@ describe('broadsheet turn', () => {
     expect(text).toContain('Read a.ts · 0.1s')
     expect(text.indexOf('thinking 6.0s')).toBeGreaterThan(text.indexOf('set in'))
     expect(JSON.stringify(tree)).toContain('"justifyContent":"center"')
+    expect(JSON.stringify(tree), 'centered on the page, not on itself').toContain('"width":"100%"')
   })
 
   test('a receipt without stats shows its duration only', async () => {
