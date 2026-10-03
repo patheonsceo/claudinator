@@ -1,6 +1,8 @@
-import type { IngredientId, LookId, Settings } from '../../types'
+import type { ClaudinatorSettings, IngredientId, LookId } from '../../types'
 
-export type { IngredientId, LookId, Settings } from '../../types'
+export type { IngredientId, LookId } from '../../types'
+
+export type Settings = ClaudinatorSettings
 
 export const LOOK_IDS: readonly LookId[] = ['hairline', 'off']
 
