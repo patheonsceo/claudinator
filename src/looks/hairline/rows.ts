@@ -1,6 +1,6 @@
 import type { RenderElement } from 'claude-code'
 
-import { plural } from '../../engine/format'
+import { plural, printable } from '../../engine/format'
 import { tone } from '../../engine/palette'
 import { GLYPHS, bashSummary, changeOf, errorSummary, factsOf, groupSummary, isChangeTool, pickDiffLines } from '../../engine/tool-facts'
 import type { DiffLine } from '../../engine/tool-facts'
@@ -15,7 +15,7 @@ function diffLine(ctx: Ctx, line: DiffLine): RenderElement {
       color: tone(C.text, ctx.fade),
       ...(faded ? {} : { backgroundColor: line.kind === '+' ? 'diffAdded' : 'diffRemoved' }),
       wrap: 'truncate-end',
-      children: `${line.kind} ${line.text.replace(/\t/g, '  ')}`,
+      children: `${line.kind} ${printable(line.text, 400)}`,
     }),
   })
 }
@@ -26,7 +26,8 @@ export function toolRow(row: ToolRow, ctx: Ctx): RenderElement {
   const change = isChangeTool(row.tool) ? changeOf(row.tool, row.input) : null
   const failed = row.isErrored || row.isInterrupted
   const glyph = failed ? txt(ctx, C.err, '✕') : txt(ctx, change ? C.accent : C.dim, GLYPHS[facts.glyph])
-  const verb = txt(ctx, change ? C.text : C.dim, facts.verb.slice(0, 6).padEnd(6))
+  const label = facts.verb.length > 6 ? facts.verb.slice(0, 5) + '…' : facts.verb.padEnd(6)
+  const verb = txt(ctx, change ? C.text : C.dim, label)
   const target = facts.isPath && facts.target !== '' ? pathLabel(ctx, facts.target) : txt(ctx, C.text, facts.target, { wrap: 'truncate-end' })
   const parts: RenderElement[] = [glyph, verb, grow(ctx, target)]
   if (failed) parts.push(txt(ctx, C.err, row.isInterrupted ? 'interrupted' : 'failed'))

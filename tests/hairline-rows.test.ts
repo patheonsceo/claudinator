@@ -77,6 +77,16 @@ describe('hairline rows', () => {
     expect(text).toContain('0.5s')
   })
 
+  test('a long tool name ends in an ellipsis instead of being cut', async () => {
+    expect(textOf(toolRow(row({ tool: 'mcp__github__create_pull_request', input: { title: 'x' } }), ctxOf()))).toContain('creat…')
+  })
+
+  test('a diff line from a minified file is clipped well under the text limit', async () => {
+    const edit = row({ tool: 'Edit', input: { file_path: '/work/a.min.js', old_string: 'a', new_string: 'b'.repeat(20_000) } })
+    const longest = Math.max(...JSON.stringify(toolRow(edit, ctxOf())).split('"').map(s => s.length))
+    expect(longest).toBeLessThan(1_000)
+  })
+
   test('the quiet line counts what it hides', async () => {
     expect(textOf(quietLine(4, ctxOf()))).toContain('4 steps hidden')
   })

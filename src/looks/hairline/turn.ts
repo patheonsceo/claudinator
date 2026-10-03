@@ -1,6 +1,6 @@
 import type { RenderElement } from 'claude-code'
 
-import { formatDuration, plural } from '../../engine/format'
+import { formatDuration, plural, printable } from '../../engine/format'
 import { tone } from '../../engine/palette'
 import type { Ctx, ReceiptData } from '../look'
 import { C, delta, grow, txt } from './style'
@@ -10,7 +10,7 @@ export function userMessage(text: string, ctx: Ctx): RenderElement {
   return Box({
     flexDirection: 'row',
     columnGap: 1,
-    children: [txt(ctx, C.accent, '❯', { bold: true }), grow(ctx, Text({ color: tone(C.text, ctx.fade), bold: ctx.fade === 0, wrap: 'wrap', children: text }))],
+    children: [txt(ctx, C.accent, '❯', { bold: true }), grow(ctx, Text({ color: tone(C.text, ctx.fade), bold: ctx.fade === 0, wrap: 'wrap', children: printable(text, 4000, { keepNewlines: true }) }))],
   })
 }
 

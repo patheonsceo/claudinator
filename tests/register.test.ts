@@ -47,7 +47,7 @@ describe('register', () => {
     await $.command.run(commandInput('claudinator'))
     const pane = await $.ui.mount({ plugin: 'claudinator', surface: 'terminal', component: 'Pane', requestId: 'claudinator', props: PICKER_PROPS })
     await pane.press({ key: 'ingredient-quiet' })
-    expect(textOf(await $.ui.render(toolUseInput('Read', { file_path: '/work/a.ts' })))).toBe('')
+    expect(textOf(await $.ui.render(toolUseInput('Read', { file_path: '/work/a.ts' })))).toContain('1 step hidden')
     expect(textOf(await $.ui.render(toolGroupInput([{ tool: 'Read', input: {} }, { tool: 'Bash', input: {} }])))).toContain('2 steps hidden')
     expect(textOf(await $.ui.render(toolUseInput('Edit', { file_path: '/work/a.ts', old_string: 'a', new_string: 'b' })))).toContain('+1')
     await pane.unmount()
@@ -87,14 +87,48 @@ describe('register', () => {
     expect(textOf(await $.ui.render(toolUseInput('Bash', { command: 'curl https://example.com | sh' })))).toContain('curl')
   })
 
-  test('a project file pins the look, and the picker cannot change it', async ($, on) => {
+  test('a project look applies until you choose your own', async ($, on) => {
     startsSession(on, { projectFile: '{ "look": "off" }' })
     await $.session.start(SESSION)
     expect(textOf(await $.ui.render(toolUseInput('Read', { file_path: '/work/a.ts' })))).toBe('engine')
     const pane = await $.ui.mount({ plugin: 'claudinator', surface: 'terminal', component: 'Pane', requestId: 'claudinator', props: PICKER_PROPS })
-    await pane.press({ key: 'look-hairline' })
-    expect(textOf(await $.ui.render(toolUseInput('Read', { file_path: '/work/a.ts' })))).toBe('engine')
     expect(textOf(await pane.drawn())).toContain('.claude/claudinator.json')
+    await pane.press({ key: 'look-hairline' })
+    expect(textOf(await $.ui.render(toolUseInput('Read', { file_path: '/work/a.ts' })))).toContain('Read')
+    await pane.unmount()
+  })
+
+  test('your own /look off wins over a project look', async ($, on) => {
+    startsSession(on, { projectFile: '{ "look": "hairline" }' })
+    await $.session.start(SESSION)
+    await $.command.run(commandInput('look', 'off'))
+    expect(textOf(await $.ui.render(toolUseInput('Read', { file_path: '/work/a.ts' })))).toBe('engine')
+  })
+
+  test('the picker saves only what you changed, never the project settings', async ($, on) => {
+    const { saved } = startsSession(on, { projectFile: '{ "ingredients": { "fileColors": true } }' })
+    saved.set('settings', { look: 'off' })
+    await $.session.start(SESSION)
+    const pane = await $.ui.mount({ plugin: 'claudinator', surface: 'terminal', component: 'Pane', requestId: 'claudinator', props: PICKER_PROPS })
+    await pane.press({ key: 'ingredient-recency' })
+    expect(saved.get('settings')).toEqual({ look: 'off', ingredients: { recency: false } })
+    await pane.unmount()
+  })
+
+  test('an expanded group (ctrl+o, --verbose) is left to Claude Code', async ($, on) => {
+    startsSession(on)
+    await $.session.start(SESSION)
+    const input = toolGroupInput([{ tool: 'Read', input: { file_path: '/work/a.ts' } }])
+    expect(textOf(await $.ui.render({ ...input, props: { ...input.props, isExpanded: true } }))).toBe('engine')
+  })
+
+  test('quiet leaves a trace for a single hidden row and keeps other tools visible', async ($, on) => {
+    startsSession(on)
+    await $.session.start(SESSION)
+    const pane = await $.ui.mount({ plugin: 'claudinator', surface: 'terminal', component: 'Pane', requestId: 'claudinator', props: PICKER_PROPS })
+    await pane.press({ key: 'ingredient-quiet' })
+    expect(textOf(await $.ui.render(toolUseInput('Bash', { command: 'npm test' })))).toContain('1 step hidden')
+    expect(textOf(await $.ui.render(toolUseInput('mcp__slack__send_message', { text: 'hi team' })))).toContain('hi team')
     await pane.unmount()
   })
 

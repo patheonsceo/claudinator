@@ -4,7 +4,7 @@ import { DEFAULT_SETTINGS } from '../src/engine/settings'
 import { pickerView } from '../src/panes/picker'
 import { TERMINAL_ELS, textOf } from './fixtures'
 
-const info = { isFullscreen: true, lockedLook: false, lockedIngredients: [] }
+const info = { isFullscreen: true, hasProjectFile: false }
 const noop = { setLook: () => {}, toggle: () => {} }
 
 function find(tree: unknown, key: string): Record<string, unknown> | undefined {
@@ -43,11 +43,8 @@ describe('picker', () => {
     expect(textOf(pickerView(TERMINAL_ELS, DEFAULT_SETTINGS, { ...info, isFullscreen: false }, noop))).toContain('CLAUDE_CODE_NO_FLICKER=1')
   })
 
-  test('choices a project file sets are marked and do nothing', async () => {
-    const calls: string[] = []
-    const tree = pickerView(TERMINAL_ELS, DEFAULT_SETTINGS, { ...info, lockedLook: true }, { setLook: id => calls.push(id), toggle: () => {} })
-    ;(find(tree, 'look-off')?.onPress as () => void)()
-    expect(calls).toEqual([])
-    expect(textOf(tree)).toContain('.claude/claudinator.json')
+  test('the footer mentions a project file when one sets defaults', async () => {
+    expect(textOf(pickerView(TERMINAL_ELS, DEFAULT_SETTINGS, { ...info, hasProjectFile: true }, noop))).toContain('.claude/claudinator.json')
+    expect(textOf(pickerView(TERMINAL_ELS, DEFAULT_SETTINGS, info, noop))).not.toContain('.claude/claudinator.json')
   })
 })

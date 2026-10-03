@@ -1,4 +1,4 @@
-import { lastLine, oneLine, plural } from './format'
+import { lastLine, oneLine, plural, printable } from './format'
 
 export type Glyph = 'read' | 'search' | 'edit' | 'create' | 'run' | 'web' | 'agent' | 'other'
 
@@ -36,7 +36,7 @@ function shortName(tool: string): string {
 /** What a call is, from its tool name and input. Safe on partial input. */
 export function factsOf(tool: string, input: unknown): ToolFacts {
   const i = rec(input)
-  const path = (target: string, glyph: Glyph, verb: string): ToolFacts => ({ glyph, verb, target, isPath: true })
+  const path = (target: string, glyph: Glyph, verb: string): ToolFacts => ({ glyph, verb, target: printable(target, MAX_TARGET * 2), isPath: true })
   const text = (target: string, glyph: Glyph, verb: string): ToolFacts => ({ glyph, verb, target: oneLine(target, MAX_TARGET), isPath: false })
   switch (tool) {
     case 'Read':
@@ -61,11 +61,24 @@ export function factsOf(tool: string, input: unknown): ToolFacts {
     case 'Task':
     case 'Agent':
       return text(str(i.description), 'agent', 'Agent')
+    case 'TodoWrite': {
+      const todos = Array.isArray(i.todos) ? i.todos.map(rec) : []
+      const active = todos.find(t => t.status === 'in_progress') ?? todos[0]
+      return text(str(active?.content), 'other', 'Todos')
+    }
+    case 'ExitPlanMode':
+      return text('', 'other', 'Plan')
     default: {
       const first = Object.values(i).find(v => typeof v === 'string')
       return text(str(first), 'other', shortName(tool))
     }
   }
+}
+
+/** Tools whose rows Quiet may hide: reads, searches, commands and fetches. Agents and other tools stay visible. */
+export function isQuietable(tool: string): boolean {
+  const glyph = factsOf(tool, {}).glyph
+  return glyph === 'read' || glyph === 'search' || glyph === 'run' || glyph === 'web'
 }
 
 /** Tools whose calls change files. */

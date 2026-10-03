@@ -6,7 +6,7 @@ import type { Els } from '../looks/look'
 
 export const PICKER_PANE = 'claudinator'
 
-export type PickerInfo = { isFullscreen: boolean; lockedLook: boolean; lockedIngredients: IngredientId[] }
+export type PickerInfo = { isFullscreen: boolean; hasProjectFile: boolean }
 export type PickerActions = { setLook: (id: LookId) => void; toggle: (id: IngredientId) => void }
 
 export function pickerView(els: Els, settings: Settings, info: PickerInfo, actions: PickerActions): RenderElement {
@@ -20,29 +20,24 @@ export function pickerView(els: Els, settings: Settings, info: PickerInfo, actio
       hotkey: String(i + 1),
       plain: true,
       dimColor: settings.look !== id,
-      onPress: () => {
-        if (!info.lockedLook) actions.setLook(id)
-      },
+      onPress: () => actions.setLook(id),
     }),
   )
 
-  const ingredients = INGREDIENT_IDS.map(id => {
-    const isLocked = info.lockedIngredients.includes(id)
-    return Button({
+  const ingredients = INGREDIENT_IDS.map(id =>
+    Button({
       key: `ingredient-${id}`,
-      label: `${INGREDIENT_LABELS[id]} · ${settings.ingredients[id] ? 'on' : 'off'}${isLocked ? ' (project)' : ''}`,
+      label: `${INGREDIENT_LABELS[id]} · ${settings.ingredients[id] ? 'on' : 'off'}`,
       hotkey: INGREDIENT_HOTKEYS[id],
       plain: true,
       dimColor: !settings.ingredients[id],
-      onPress: () => {
-        if (!isLocked) actions.toggle(id)
-      },
-    })
-  })
+      onPress: () => actions.toggle(id),
+    }),
+  )
 
   const notes: RenderElement[] = []
-  if (info.lockedLook || info.lockedIngredients.length > 0) {
-    notes.push(Text({ dimColor: true, children: 'Some choices are set by this project in .claude/claudinator.json.' }))
+  if (info.hasProjectFile) {
+    notes.push(Text({ dimColor: true, children: 'This project sets defaults in .claude/claudinator.json. Your choices here take precedence.' }))
   }
   notes.push(
     Text({

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { DEFAULT_SETTINGS, choiceOf, layerOf, optionsLayer, projectLayerOf, resolveSettings, toggled, withLook } from '../src/engine/settings'
+import { DEFAULT_SETTINGS, changedIngredient, changedLook, choiceOf, layerOf, optionsLayer, projectLayerOf, resolveSettings, toggled, withLook } from '../src/engine/settings'
 
 describe('settings', () => {
   test('defaults are Hairline with recency fade and mini diffs', async () => {
@@ -30,6 +30,11 @@ describe('settings', () => {
   test('a project file cannot hide rows: it may not turn on Quiet', async () => {
     expect(projectLayerOf({ look: 'off', ingredients: { quiet: true, fileColors: true } })).toEqual({ look: 'off', ingredients: { fileColors: true } })
     expect(projectLayerOf({ ingredients: { quiet: true } })).toEqual({})
+  })
+
+  test('a change touches only the field the user changed', async () => {
+    expect(changedLook({ ingredients: { quiet: true } }, 'off')).toEqual({ look: 'off', ingredients: { quiet: true } })
+    expect(changedIngredient({ look: 'off' }, 'recency', false)).toEqual({ look: 'off', ingredients: { recency: false } })
   })
 
   test('the picker helpers return new settings', async () => {

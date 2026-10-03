@@ -1,6 +1,6 @@
 import type { RenderElement } from 'claude-code'
 
-import { clockLabel, splitPath } from '../../engine/format'
+import { clockLabel, printable, splitPath } from '../../engine/format'
 import { LIVE } from '../../engine/palette'
 import { encodeCells } from '../../engine/raster'
 import type { Cell } from '../../engine/raster'
@@ -13,7 +13,7 @@ export const LIVE_WORDS: Record<LiveMode, string> = { thinking: 'Thinking', writ
 
 const CLOCK_COLUMNS = 5
 
-export function liveStateOf(spinnerMode: string, running: Running | undefined, elapsedMs: number, cwd: string): LiveState {
+export function liveStateOf(spinnerMode: string, running: Running | undefined, elapsedMs: number, cwd: string, message: string | null = null): LiveState {
   const mode: LiveMode = spinnerMode === 'responding' ? 'writing' : spinnerMode === 'tool-use' || spinnerMode === 'tool-input' ? 'running' : 'thinking'
   let detail = ''
   if (mode === 'running' && running) {
@@ -21,6 +21,8 @@ export function liveStateOf(spinnerMode: string, running: Running | undefined, e
     const { dir, base } = facts.isPath ? splitPath(facts.target, cwd) : { dir: '', base: facts.target }
     detail = `${facts.verb} ${dir}${base}`.trim()
   }
+  // Claude Code's own status (a retry, a backoff, compacting) always wins over our detail.
+  if (message) detail = printable(message, 200)
   return { mode, detail, elapsedMs }
 }
 

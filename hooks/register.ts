@@ -7,9 +7,9 @@ import type { ElementTable, EngineInterface, Register, RenderSurface } from 'cla
 
 import { fadeOf } from '../src/engine/palette'
 import * as Model from '../src/engine/session-model'
-import { DEFAULT_SETTINGS, LOOK_LABELS, choiceOf, isLookId, layerOf, optionsLayer, projectLayerOf, resolveSettings, toggled, withLook } from '../src/engine/settings'
-import type { IngredientId, Settings, SettingsLayer } from '../src/engine/settings'
-import { isChangeTool } from '../src/engine/tool-facts'
+import { DEFAULT_SETTINGS, LOOK_LABELS, changedIngredient, changedLook, isLookId, layerOf, optionsLayer, projectLayerOf, resolveSettings } from '../src/engine/settings'
+import type { Settings, SettingsLayer } from '../src/engine/settings'
+import { isQuietable } from '../src/engine/tool-facts'
 import { LOOKS } from '../src/looks'
 import { liveStateOf } from '../src/looks/hairline/live'
 import type { Ctx, LiveState, ToolRow } from '../src/looks/look'
@@ -20,6 +20,7 @@ const settingsAtom = atom({ plugin: 'claudinator', key: 'settings' } as const, D
 let model = Model.createModel()
 let options: SettingsLayer = {}
 let project: SettingsLayer = {}
+let saved: SettingsLayer = {}
 let cwd = ''
 let frame = 0
 let isFullscreen = true
@@ -35,7 +36,12 @@ function rowOf(id: string, p: { tool: string; input: unknown; isRunning: boolean
 }
 
 function isHiddenByQuiet(settings: Settings, row: { tool: string; isErrored: boolean }): boolean {
-  return settings.ingredients.quiet && !isChangeTool(row.tool) && !row.isErrored
+  return settings.ingredients.quiet && isQuietable(row.tool) && !row.isErrored
+}
+
+/** Defaults, then /config options, then the project's file, then what the user chose; later wins. */
+function currentSettings(): Settings {
+  return resolveSettings([options, project, saved])
 }
 
 async function readProjectLayer($: EngineInterface): Promise<SettingsLayer> {
@@ -47,14 +53,20 @@ async function readProjectLayer($: EngineInterface): Promise<SettingsLayer> {
 }
 
 async function loadSettings($: EngineInterface): Promise<void> {
-  const saved = layerOf(await $.store.get('settings'))
+  saved = layerOf(await $.store.get('settings'))
   project = await readProjectLayer($)
-  await update($, settingsAtom, () => resolveSettings([options, saved, project]))
+  await update($, settingsAtom, () => currentSettings())
 }
 
-async function saveChoice($: EngineInterface, choice: Settings): Promise<void> {
-  await $.store.set('settings', choiceOf(choice))
-  await update($, settingsAtom, () => resolveSettings([options, choiceOf(choice), project]))
+/**
+ * Saves one change the user made. It starts from what the store holds now, so
+ * only the touched field changes: project settings and /config options never
+ * leak into the user's choice for other repositories.
+ */
+async function saveChange($: EngineInterface, change: (layer: SettingsLayer) => SettingsLayer): Promise<void> {
+  saved = change(layerOf(await $.store.get('settings')))
+  await $.store.set('settings', saved)
+  await update($, settingsAtom, () => currentSettings())
 }
 
 async function tick($: EngineInterface): Promise<void> {
@@ -121,6 +133,13 @@ export const register: Register = (on, opts) => {
     return result
   })
 
+  // Observes the permission verdict only, so a call that waited on the user shows no duration.
+  on('tool.check', async ($, e, next) => {
+    const verdict = await next(e)
+    if (e.tool_use_id && verdict.decision === 'ask') Model.toolPrompted(model, e.tool_use_id)
+    return verdict
+  })
+
   on('tool.call', async ($, e, next) => {
     Model.toolStarted(model, e.tool_use_id, e.tool, e, await $.clock.now())
     $.ui.invalidate('ui.render')
@@ -146,7 +165,7 @@ export const register: Register = (on, opts) => {
       $.ui.toast(`No look called "${id}". Try /look hairline or /look off.`)
       return {}
     }
-    await saveChoice($, withLook(await read($, settingsAtom), id))
+    await saveChange($, layer => changedLook(layer, id))
     $.ui.toast(`Look: ${LOOK_LABELS[id]}`)
     return {}
   })
@@ -161,17 +180,13 @@ export const register: Register = (on, opts) => {
     return pickerView(
       $.ui.resolve(e),
       settings,
-      {
-        isFullscreen,
-        lockedLook: project.look !== undefined,
-        lockedIngredients: Object.keys(project.ingredients ?? {}) as IngredientId[],
-      },
+      { isFullscreen, hasProjectFile: Object.keys(project).length > 0 },
       {
         setLook: id => {
-          void saveChoice($, withLook(settings, id))
+          void saveChange($, layer => changedLook(layer, id))
         },
         toggle: id => {
-          void saveChoice($, toggled(settings, id))
+          void saveChange($, layer => changedIngredient(layer, id, !settings.ingredients[id]))
         },
       },
     )
@@ -183,17 +198,18 @@ export const register: Register = (on, opts) => {
     const look = LOOKS[settings.look]
     if (!look) return next(e)
     const row = rowOf(e.props.tool_use_id, e.props)
-    const els = $.ui.resolve(e)
-    if (isHiddenByQuiet(settings, row)) return els.Box({})
     const fade = fadeOf(model.toolTurn.get(row.id), model.turn, settings.ingredients.recency)
-    return look.toolRow(row, ctxOf(e, els, settings, fade))
+    const ctx = ctxOf(e, $.ui.resolve(e), settings, fade)
+    if (isHiddenByQuiet(settings, row)) return look.quietLine(1, ctx)
+    return look.toolRow(row, ctx)
   }).catch(async ($, e, next) => next(e))
 
   on('ui.render', { component: 'ToolGroup' }, async ($, e, next) => {
     if (e.component !== 'ToolGroup') return next(e)
     const settings = await read($, settingsAtom)
     const look = LOOKS[settings.look]
-    if (!look) return next(e)
+    // An expanded group (ctrl+o, --verbose) unfolds into Claude Code's own rows.
+    if (!look || e.props.isExpanded) return next(e)
     const rows = e.props.calls.map(c => rowOf(c.tool_use_id ?? '', c))
     const first = rows[0]
     const fade = fadeOf(first ? model.toolTurn.get(first.id) : undefined, model.turn, settings.ingredients.recency)
@@ -241,7 +257,7 @@ export const register: Register = (on, opts) => {
     const look = LOOKS[settings.look]
     if (!look) return next(e)
     const elapsed = model.isWorking ? (await $.clock.now()) - model.turnStartedAt : 0
-    const state = liveStateOf(e.props.mode, Model.latestRunning(model), elapsed, cwd)
+    const state = liveStateOf(e.props.mode, Model.latestRunning(model), elapsed, cwd, e.props.message)
     live = e.surface === 'terminal' ? { requestId: e.requestId, state } : null
     return look.live(state, frame, ctxOf(e, $.ui.resolve(e), settings, 0))
   }).catch(async ($, e, next) => next(e))
