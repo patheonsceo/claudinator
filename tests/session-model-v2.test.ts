@@ -41,10 +41,10 @@ describe('session model for the full suite', () => {
   test('footnoted calls are numbered after the reply block they follow', async () => {
     const m = Model.createModel()
     Model.startTurn(m, 0)
-    Model.assistantSeen(m, 'msg-a')
+    Model.assistantSeen(m, 'msg-a', 1)
     Model.toolStarted(m, 'r1', 'Read', { file_path: '/w/a.ts' }, 1, true)
     Model.toolStarted(m, 'g1', 'Grep', { pattern: 'x' }, 2, true)
-    Model.assistantSeen(m, 'msg-b')
+    Model.assistantSeen(m, 'msg-b', 3)
     Model.toolStarted(m, 'b1', 'Bash', { command: 'ls' }, 3, true)
     Model.toolFinished(m, 'b1', 'Bash', { command: 'ls' }, 13, false)
     expect(Model.marksOf(m, 'msg-a')).toEqual([1, 2])
@@ -59,8 +59,21 @@ describe('session model for the full suite', () => {
     Model.startTurn(m, 0)
     Model.toolStarted(m, 'r1', 'Read', { file_path: '/w/a.ts' }, 1, true)
     Model.toolStarted(m, 'r2', 'Read', { file_path: '/w/b.ts' }, 2, true)
-    Model.assistantSeen(m, 'msg-final')
+    Model.assistantSeen(m, 'msg-final', 3)
     expect(Model.marksOf(m, 'msg-final')).toEqual([1, 2])
+  })
+
+  test('an old reply drawn again during a later turn never takes its footnotes', async () => {
+    const m = Model.createModel()
+    Model.assistantSeen(m, 'old-reply', 0)
+    Model.startTurn(m, 100)
+    Model.toolStarted(m, 'r1', 'Read', { file_path: '/w/a.ts' }, 110, true)
+    Model.assistantSeen(m, 'old-reply', 120)
+    expect(Model.marksOf(m, 'old-reply')).toEqual([])
+    Model.assistantSeen(m, 'scrolled-into-view', 60_000)
+    expect(Model.marksOf(m, 'scrolled-into-view'), 'first seen long after any activity').toEqual([])
+    Model.assistantSeen(m, 'new-reply', 130)
+    expect(Model.marksOf(m, 'new-reply')).toEqual([1])
   })
 
   test('the ledger collects every file changed in the session', async () => {
