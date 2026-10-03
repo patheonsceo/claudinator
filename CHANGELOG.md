@@ -7,4 +7,5 @@ All notable changes to Claudinator are recorded here. The format follows
 ## [Unreleased]
 
 ### Added
+- Design spec: looks, ingredients, panes, settings, data handling, testing, media and release process, with evidence from a feasibility spike.
 - Repository foundation: README, license, contribution and security policies, issue and pull request templates.
