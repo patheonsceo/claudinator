@@ -1,5 +1,7 @@
 import type { LookId } from '../engine/settings'
+import { BLUEPRINT } from './blueprint'
 import { HAIRLINE } from './hairline'
+import { THERMAL } from './thermal'
 import type { Look } from './look'
 
 /** Every look by id; null means Claudinator draws nothing and Claude Code draws its own. */
@@ -10,7 +12,7 @@ export const LOOKS: Record<LookId, Look | null> = {
   mission: null,
   prism: null,
   sumi: null,
-  blueprint: null,
-  thermal: null,
+  blueprint: BLUEPRINT,
+  thermal: THERMAL,
   off: null,
 }
