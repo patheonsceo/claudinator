@@ -9,6 +9,15 @@ import type { Ctx, FootnoteData, TimeStripData, WaitingData } from './look'
 const SUPERSCRIPTS = ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹']
 
 /** `12` → `¹²`. */
+/** A reply with its footnote marks: after the last word, or on a paragraph of their own after a code block, table or list. */
+export function withMarks(text: string, marks: number[]): string {
+  if (marks.length === 0) return text
+  const sup = marks.map(superscript).join('')
+  const last = text.trimEnd().split('\n').pop()?.trim() ?? ''
+  const isBlock = /^(```|~~~|\||[-*+] |\d+[.)] )/.test(last)
+  return isBlock ? `${text.trimEnd()}\n\n${sup}` : `${text} ${sup}`
+}
+
 export function superscript(n: number): string {
   return String(Math.max(0, Math.floor(n)))
     .split('')

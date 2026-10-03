@@ -11,9 +11,11 @@ export type TurnStats = {
   contextPercent?: number
   /** Lines changed per file, in the order the files were first changed. */
   byFile?: FileChange[]
-  /** Tool calls in the turn, and the time they took (calls that waited on a prompt excluded). */
+  /** Tool calls in the turn, and the time their tools ran (overlaps counted once; a call that asked counts only its run). */
   toolCount?: number
   toolsMs?: number
+  /** The turn's own wall-clock time, from its start to its end. */
+  wallMs?: number
   /** Time spent on calls that waited for the user's permission. */
   waitingMs?: number
   /** The turn's footnotes, when Footnotes was on. */
@@ -63,7 +65,22 @@ export type SessionModel = {
   lastActivityAt: number
   noteOfTool: Map<string, number>
   waiting: { id: string; tool: string; input: unknown; since: number } | null
+  /** Calls made inside a subagent's loop: they reach the ledger, never the main turn's notes or time. */
+  subagentCalls: Set<string>
+  /** The turn each footnoted call belongs to. */
+  noteTurn: Map<string, number>
+  /** Turns whose receipt was drawn with their notes, so their footnoted rows may hide. */
+  shownTurns: Set<number>
+  /** The turn just finished and its receipt not drawn yet. */
+  isReceiptPending: boolean
+  /** The current turn's calls as spans of time, to measure tools and waiting without counting overlaps twice. */
+  spans: Span[]
 }
+
+type Span = { start: number; end: number; isWaiting: boolean }
+
+/** How long after a permission prompt appears the working line's return means the user answered. */
+export const ANSWER_GAP_MS = 1000
 
 /** How soon after a submit or a turn's end a newly drawn row is taken to belong to it. */
 export const BIND_WINDOW_MS = 5000
@@ -97,6 +114,11 @@ export function createModel(): SessionModel {
     lastActivityAt: Number.NEGATIVE_INFINITY,
     noteOfTool: new Map(),
     waiting: null,
+    subagentCalls: new Set(),
+    noteTurn: new Map(),
+    shownTurns: new Set(),
+    isReceiptPending: false,
+    spans: [],
   }
 }
 
@@ -114,6 +136,7 @@ export function startTurn(m: SessionModel, now: number): void {
   m.lastAssistantId = null
   m.marks.delete('')
   m.lastActivityAt = now
+  m.spans = []
   const record: TurnRecord = { turn: m.turn, prompt: m.pendingPrompt, startedAt: now, add: 0, del: 0, files: 0 }
   if (m.pendingRowId !== undefined) record.userRowId = m.pendingRowId
   m.turns.push(record)
@@ -134,11 +157,36 @@ export function assistantSeen(m: SessionModel, requestId: string, now: number): 
   m.marks.set(requestId, early)
 }
 
-export function toolStarted(m: SessionModel, id: string, tool: string, input: unknown, now: number, isFootnoted = false): void {
+/**
+ * A prompt sent while Claude works: its row never takes the running turn's place.
+ * If it goes on to start the next turn, that turn keeps its text.
+ */
+export function promptQueued(m: SessionModel, text = ''): void {
+  m.lastSubmitAt = Number.NEGATIVE_INFINITY
+  m.pendingPrompt = printable(text, 300)
+  m.pendingRowId = undefined
+}
+
+/**
+ * Claude Code drew its working line. That counts as activity, so a reply after
+ * long thinking still binds; and as it is hidden while a permission prompt is
+ * open, its return a moment later means the user has answered.
+ */
+export function workingLineDrawn(m: SessionModel, now: number): void {
+  if (!m.isWorking) return
+  m.lastActivityAt = now
+  if (m.waiting && now - m.waiting.since >= ANSWER_GAP_MS) m.waiting = null
+}
+
+export function toolStarted(m: SessionModel, id: string, tool: string, input: unknown, now: number, isFootnoted = false, isSubagent = false): void {
   m.toolTurn.set(id, m.turn)
   m.toolStart.set(id, now)
   m.lastActivityAt = now
   m.running.set(id, { tool, input, startedAt: now })
+  if (isSubagent) {
+    m.subagentCalls.add(id)
+    return
+  }
   if (isChangeTool(tool)) {
     let count = 0
     for (const [otherId, turn] of m.toolTurn) if (turn === m.turn && m.changeIndex.has(otherId)) count += 1
@@ -148,6 +196,7 @@ export function toolStarted(m: SessionModel, id: string, tool: string, input: un
     const n = (m.current.notes?.length ?? 0) + 1
     m.current.notes = [...(m.current.notes ?? []), { n, tool, input }]
     m.noteOfTool.set(id, n)
+    m.noteTurn.set(id, m.turn)
     const owner = m.lastAssistantId ?? ''
     m.marks.set(owner, [...(m.marks.get(owner) ?? []), n])
   }
@@ -158,21 +207,34 @@ export function toolPrompted(m: SessionModel, id: string): void {
   m.prompted.add(id)
 }
 
-export function toolFinished(m: SessionModel, id: string, tool: string, input: unknown, now: number, isError: boolean): void {
+/**
+ * A call ended. `execMs`, when Claude Code reports it, is how long the tool
+ * itself ran; for a call that asked, the rest of its time was the user's.
+ */
+export function toolFinished(m: SessionModel, id: string, tool: string, input: unknown, now: number, isError: boolean, execMs?: number): void {
   const start = m.toolStart.get(id)
   const ms = start === undefined ? undefined : Math.max(0, now - start)
+  const isPrompted = m.prompted.has(id)
+  const ranMs = ms === undefined ? undefined : isPrompted ? (execMs === undefined ? undefined : Math.min(ms, Math.max(0, execMs))) : ms
   m.lastActivityAt = now
-  if (ms !== undefined && !m.prompted.has(id)) m.toolMs.set(id, ms)
+  if (ranMs !== undefined) m.toolMs.set(id, ranMs)
   m.running.delete(id)
   if (m.waiting?.id === id) m.waiting = null
-  if (m.isWorking && m.toolTurn.get(id) === m.turn && ms !== undefined) {
+  const isMain = !m.subagentCalls.has(id)
+  if (isMain && m.isWorking && m.toolTurn.get(id) === m.turn && start !== undefined && ms !== undefined) {
     m.current.toolCount = (m.current.toolCount ?? 0) + 1
-    if (m.prompted.has(id)) m.current.waitingMs = (m.current.waitingMs ?? 0) + ms
-    else m.current.toolsMs = (m.current.toolsMs ?? 0) + ms
+    const ranFrom = now - (ranMs ?? 0)
+    if (isPrompted) m.spans.push({ start, end: ranFrom, isWaiting: true })
+    if (ranMs !== undefined && ranMs > 0) m.spans.push({ start: ranFrom, end: now, isWaiting: false })
     const n = m.noteOfTool.get(id)
-    if (n !== undefined && !m.prompted.has(id)) m.current.notes = (m.current.notes ?? []).map(note => (note.n === n ? { ...note, durationMs: ms } : note))
+    if (n !== undefined && ranMs !== undefined) m.current.notes = (m.current.notes ?? []).map(note => (note.n === n ? { ...note, durationMs: ranMs } : note))
   }
   if (isError || !isChangeTool(tool)) return
+  if (!isMain) {
+    const change = changeOf(tool, input)
+    if (change && change.file !== '') addToLedger(m, id, change)
+    return
+  }
   const change = changeOf(tool, input)
   if (!change || change.file === '') return
   if (!m.current.files.includes(change.file)) m.current.files.push(change.file)
@@ -185,12 +247,33 @@ export function toolFinished(m: SessionModel, id: string, tool: string, input: u
     entry.del += change.del
   } else byFile.push({ file: change.file, add: change.add, del: change.del })
   m.current.byFile = byFile
+  addToLedger(m, id, change)
+}
+
+function addToLedger(m: SessionModel, id: string, change: { file: string; add: number; del: number }): void {
   const ledger = m.ledger.get(change.file) ?? { file: change.file, add: 0, del: 0, turns: [], lastToolId: id }
   ledger.add += change.add
   ledger.del += change.del
   if (!ledger.turns.includes(m.turn)) ledger.turns.push(m.turn)
   ledger.lastToolId = id
   m.ledger.set(change.file, ledger)
+}
+
+/** The length of time covered by a set of spans, overlaps counted once. */
+function coveredMs(spans: Span[]): number {
+  const sorted = spans.filter(s => s.end > s.start).sort((a, b) => a.start - b.start)
+  let total = 0
+  let from = Number.NEGATIVE_INFINITY
+  let to = Number.NEGATIVE_INFINITY
+  for (const s of sorted) {
+    if (s.start > to) {
+      if (to > from) total += to - from
+      from = s.start
+      to = s.end
+    } else to = Math.max(to, s.end)
+  }
+  if (to > from) total += to - from
+  return total
 }
 
 export function completeTurn(m: SessionModel, now: number, contextPercent?: number, answer?: string): void {
@@ -203,6 +286,12 @@ export function completeTurn(m: SessionModel, now: number, contextPercent?: numb
     m.lastCompleted = null
     return
   }
+  const busyMs = coveredMs(m.spans)
+  const waitingMs = coveredMs(m.spans.filter(s => s.isWaiting))
+  m.current.waitingMs = waitingMs
+  m.current.toolsMs = busyMs - waitingMs
+  m.current.wallMs = Math.max(0, now - m.turnStartedAt)
+  m.isReceiptPending = true
   const record = m.turns[m.turns.length - 1]
   const title = headlineOf(answer, record?.prompt ?? '')
   m.lastCompleted = {
@@ -249,6 +338,17 @@ export function noteOf(m: SessionModel, toolId: string): number | undefined {
   return m.noteOfTool.get(toolId)
 }
 
+/**
+ * Whether a footnoted call is accounted for elsewhere, so its row may hide:
+ * while its turn runs or waits for its receipt, and once a receipt shows its note.
+ */
+export function isNoteShown(m: SessionModel, toolId: string): boolean {
+  const turn = m.noteTurn.get(toolId)
+  if (turn === undefined) return false
+  if (turn === m.turn && (m.isWorking || m.isReceiptPending)) return true
+  return m.shownTurns.has(turn)
+}
+
 export function ledgerOf(m: SessionModel): LedgerEntry[] {
   return [...m.ledger.values()].map(e => ({ ...e, turns: [...e.turns] }))
 }
@@ -268,7 +368,10 @@ export function waitingOf(m: SessionModel, now: number): { tool: string; input: 
 /** The stats a turn's closing line shows; bound the first time that line is drawn. */
 export function receiptFor(m: SessionModel, requestId: string, now: number): TurnStats | null {
   if (!m.receipts.has(requestId)) {
-    m.receipts.set(requestId, now - m.completedAt <= BIND_WINDOW_MS ? m.lastCompleted : null)
+    const stats = now - m.completedAt <= BIND_WINDOW_MS ? m.lastCompleted : null
+    m.receipts.set(requestId, stats)
+    if (stats) m.shownTurns.add(stats.turn)
+    m.isReceiptPending = false
   }
   return m.receipts.get(requestId) ?? null
 }
@@ -281,7 +384,7 @@ export function turnOfRow(m: SessionModel, requestId: string, now: number): numb
     m.rowTurn.set(requestId, turn)
     if (turn !== undefined && requestId !== 'placeholder') {
       const record = m.turns.find(t => t.turn === turn)
-      if (record) record.userRowId = requestId
+      if (record) record.userRowId ??= requestId
       else m.pendingRowId = requestId
     }
   }

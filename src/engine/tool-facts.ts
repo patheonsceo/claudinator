@@ -70,7 +70,7 @@ export function factsOf(tool: string, input: unknown): ToolFacts {
       return text('', 'other', 'Plan')
     default: {
       const first = Object.values(i).find(v => typeof v === 'string')
-      return text(str(first), 'other', shortName(tool))
+      return text(str(first), 'other', printable(shortName(tool), MAX_TARGET))
     }
   }
 }
@@ -79,6 +79,12 @@ export function factsOf(tool: string, input: unknown): ToolFacts {
 export function isQuietable(tool: string): boolean {
   const glyph = factsOf(tool, {}).glyph
   return glyph === 'read' || glyph === 'search' || glyph === 'run' || glyph === 'web'
+}
+
+/** Tools whose calls Footnotes may fold into notes: reads, searches and fetches. Commands keep their rows. */
+export function isFootnotable(tool: string): boolean {
+  const glyph = factsOf(tool, {}).glyph
+  return glyph === 'read' || glyph === 'search' || glyph === 'web'
 }
 
 /** Tools whose calls change files. */

@@ -5,7 +5,7 @@
 import { atom, read, update } from 'claude-code'
 import type { ElementTable, EngineInterface, Register, RenderElement, RenderSurface } from 'claude-code'
 
-import { isDarkTheme, ladderActions, notifyCommands, soundCommands } from '../src/engine/attention'
+import { isDarkTheme, ladderActions, notifyCommands, soundCommands, waitsOnUser } from '../src/engine/attention'
 import { comboById } from '../src/engine/combos'
 import { printable } from '../src/engine/format'
 import { fadeOf } from '../src/engine/palette'
@@ -13,9 +13,9 @@ import * as Model from '../src/engine/session-model'
 import { DEFAULT_SETTINGS, LOOK_LABELS, changedIngredient, changedLook, isLookId, layerOf, optionsLayer, projectLayerOf, resolveSettings } from '../src/engine/settings'
 import type { Settings, SettingsLayer } from '../src/engine/settings'
 import { decodeShareCode, encodeShareCode } from '../src/engine/share-code'
-import { factsOf, isQuietable } from '../src/engine/tool-facts'
+import { factsOf, isFootnotable, isQuietable } from '../src/engine/tool-facts'
 import { LOOKS } from '../src/looks'
-import { superscript, waitingBand } from '../src/looks/common'
+import { waitingBand, withMarks } from '../src/looks/common'
 import { liveStateOf } from '../src/looks/hairline/live'
 import type { Ctx, LiveState, Look, ReceiptData, ToolRow, UsageData } from '../src/looks/look'
 import { navigatorView } from '../src/panes/navigator'
@@ -38,6 +38,10 @@ let pins: Pin[] = []
 let navTab: NavigatorTab = 'chapters'
 let ladder = { toasted: false, alerted: false }
 let lastBandSecond = -1
+/** The session's permission mode, as the last tool call reported it. */
+let permissionMode: string | undefined
+/** How long each call's tool itself ran, as Claude Code reports it after the call. */
+const execMs = new Map<string, number>()
 
 function ctxOf(e: { surface: RenderSurface; viewport?: { columns: number } }, els: ElementTable, settings: Settings, fade: 0 | 1 | 2): Ctx {
   return { els, surface: e.surface, columns: e.viewport?.columns ?? 120, settings, fade, cwd, isDark }
@@ -60,8 +64,9 @@ function isHiddenByQuiet(settings: Settings, row: { tool: string; isErrored: boo
   return settings.ingredients.quiet && isQuietable(row.tool) && !row.isErrored
 }
 
-function isFootnoted(settings: Settings, id: string): boolean {
-  return settings.ingredients.footnotes && Model.noteOf(model, id) !== undefined
+/** A footnoted row hides only in the terminal, where the receipt that carries its note is drawn. */
+function isFootnoted(settings: Settings, row: { id: string; isErrored: boolean; isInterrupted?: boolean }, surface: string): boolean {
+  return settings.ingredients.footnotes && surface === 'terminal' && !row.isErrored && !row.isInterrupted && Model.isNoteShown(model, row.id)
 }
 
 /** Defaults, then /config options, then the project's file, then what the user chose; later wins. */
@@ -76,7 +81,9 @@ function receiptData(settings: Settings, durationMs: number, stats: Model.TurnSt
   if (settings.ingredients.timeStrip && stats && stats.toolsMs !== undefined) {
     const toolsMs = stats.toolsMs
     const waitingMs = stats.waitingMs ?? 0
-    data.timeStrip = { thinkingMs: Math.max(0, durationMs - toolsMs - waitingMs), toolsMs, waitingMs }
+    // Claude Code's duration leaves out permission waits, so thinking is measured against the turn's own time.
+    const wallMs = stats.wallMs ?? durationMs
+    data.timeStrip = { thinkingMs: Math.max(0, wallMs - toolsMs - waitingMs), toolsMs, waitingMs }
   }
   return data
 }
@@ -197,7 +204,7 @@ async function runLook($: EngineInterface, args: string): Promise<void> {
   const arg = args.trim()
   const lower = arg.toLowerCase()
   if (lower === '') {
-    $.ui.toast('Try /look hairline, /look zen, /look share or /look use HL-1F3. /claudinator opens the picker.')
+    $.ui.toast('Try /look hairline, /look zen, /look share or /look use HL-43H. /claudinator opens the picker.')
     return
   }
   if (lower === 'share') {
@@ -256,7 +263,8 @@ export const register: Register = (on, opts) => {
   })
 
   on('prompt.submit', async ($, e, next) => {
-    Model.promptSubmitted(model, await $.clock.now(), e.text)
+    if (e.turnId === undefined) Model.promptSubmitted(model, await $.clock.now(), e.text)
+    else Model.promptQueued(model, e.text)
     return next(e)
   })
 
@@ -280,11 +288,29 @@ export const register: Register = (on, opts) => {
     return result
   })
 
+  // Observers only: the session's permission mode, and how long each tool itself ran.
+  on('classic.UserPromptSubmit', async ($, e, next) => {
+    permissionMode = e.permission_mode
+    return next(e)
+  })
+
+  on('classic.PostToolUse', async ($, e, next) => {
+    permissionMode = e.permission_mode
+    if (typeof e.duration_ms === 'number') execMs.set(e.tool_use_id, e.duration_ms)
+    return next(e)
+  })
+
+  on('classic.PostToolUseFailure', async ($, e, next) => {
+    permissionMode = e.permission_mode
+    if (typeof e.duration_ms === 'number') execMs.set(e.tool_use_id, e.duration_ms)
+    return next(e)
+  })
+
   // Observes the permission verdict only: a call that asks waits on the user, which
   // starts the attention ladder and keeps that time out of the call's duration.
   on('tool.check', async ($, e, next) => {
     const verdict = await next(e)
-    if (e.tool_use_id && verdict.decision === 'ask') {
+    if (e.tool_use_id && verdict.decision === 'ask' && waitsOnUser(permissionMode)) {
       Model.toolPrompted(model, e.tool_use_id)
       Model.waitingStarted(model, e.tool_use_id, e.tool, e.input, await $.clock.now())
       ladder = { toasted: false, alerted: false }
@@ -295,8 +321,9 @@ export const register: Register = (on, opts) => {
 
   on('tool.call', async ($, e, next) => {
     const settings = await read($, settingsAtom)
-    const footnoted = settings.ingredients.footnotes && isQuietable(e.tool)
-    Model.toolStarted(model, e.tool_use_id, e.tool, e, await $.clock.now(), footnoted)
+    const isSubagent = e.agentId !== undefined
+    const footnoted = settings.ingredients.footnotes && isFootnotable(e.tool) && !isSubagent
+    Model.toolStarted(model, e.tool_use_id, e.tool, e, await $.clock.now(), footnoted, isSubagent)
     $.ui.invalidate('ui.render')
     let isError = true
     try {
@@ -305,7 +332,8 @@ export const register: Register = (on, opts) => {
       return result
     } finally {
       Model.waitingEnded(model, e.tool_use_id)
-      Model.toolFinished(model, e.tool_use_id, e.tool, e, await $.clock.now(), isError)
+      Model.toolFinished(model, e.tool_use_id, e.tool, e, await $.clock.now(), isError, execMs.get(e.tool_use_id))
+      execMs.delete(e.tool_use_id)
       $.ui.invalidate('ui.render')
     }
   })
@@ -421,7 +449,7 @@ export const register: Register = (on, opts) => {
     const settings = await read($, settingsAtom)
     const marks = Model.marksOf(model, e.requestId)
     if (!LOOKS[settings.look] || !settings.ingredients.footnotes || marks.length === 0) return next(e)
-    return next({ ...e, props: { ...e.props, text: `${e.props.text} ${marks.map(superscript).join('')}` } })
+    return next({ ...e, props: { ...e.props, text: withMarks(e.props.text, marks) } })
   }).catch(async ($, e, next) => next(e))
 
   on('ui.render', { component: 'ToolUse' }, async ($, e, next) => {
@@ -432,7 +460,7 @@ export const register: Register = (on, opts) => {
     const row = rowOf(e.props.tool_use_id, e.props)
     const fade = fadeOf(model.toolTurn.get(row.id), model.turn, settings.ingredients.recency)
     const ctx = ctxOf(e, $.ui.resolve(e), settings, fade)
-    if (isFootnoted(settings, row.id) && !row.isErrored) return ctx.els.Box({})
+    if (isFootnoted(settings, row, e.surface)) return ctx.els.Box({})
     if (isHiddenByQuiet(settings, row)) return look.quietLine(1, ctx)
     return look.toolRow(row, ctx)
   }).catch(async ($, e, next) => next(e))
@@ -447,7 +475,7 @@ export const register: Register = (on, opts) => {
     const first = rows[0]
     const fade = fadeOf(first ? model.toolTurn.get(first.id) : undefined, model.turn, settings.ingredients.recency)
     const ctx = ctxOf(e, $.ui.resolve(e), settings, fade)
-    const visible = rows.filter(r => !(isFootnoted(settings, r.id) && !r.isErrored))
+    const visible = rows.filter(r => !isFootnoted(settings, r, e.surface))
     if (visible.length === 0) return ctx.els.Box({})
     const hidden = visible.filter(r => isHiddenByQuiet(settings, r)).length
     if (hidden > 0 && hidden === visible.length) return look.quietLine(hidden, ctx)
@@ -460,7 +488,8 @@ export const register: Register = (on, opts) => {
     const look = LOOKS[settings.look]
     if (!look) return next(e)
     const els = $.ui.resolve(e)
-    if (!e.props.isErrored && (isHiddenByQuiet(settings, e.props) || isFootnoted(settings, e.props.tool_use_id))) return els.Box({})
+    const isFolded = isFootnoted(settings, { id: e.props.tool_use_id, isErrored: e.props.isErrored }, e.surface)
+    if (!e.props.isErrored && (isHiddenByQuiet(settings, e.props) || isFolded)) return els.Box({})
     const fade = fadeOf(model.toolTurn.get(e.props.tool_use_id), model.turn, settings.ingredients.recency)
     const drawn = look.toolResult({ tool: e.props.tool, output: e.props.output, isErrored: e.props.isErrored }, ctxOf(e, els, settings, fade))
     return drawn ?? next(e)
@@ -492,6 +521,9 @@ export const register: Register = (on, opts) => {
 
   on('ui.render', { component: 'Spinner' }, async ($, e, next) => {
     if (e.component !== 'Spinner') return next(e)
+    const wasWaiting = model.waiting !== null
+    Model.workingLineDrawn(model, await $.clock.now())
+    if (wasWaiting && model.waiting === null) $.ui.invalidate('ui.render')
     const settings = await read($, settingsAtom)
     const look = LOOKS[settings.look]
     if (!look) return next(e)

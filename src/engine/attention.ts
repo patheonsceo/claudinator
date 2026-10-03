@@ -1,6 +1,11 @@
 import { printable } from './format'
 import type { Settings } from './settings'
 
+/** Whether a call that asks is put to the user: not where a classifier or the mode decides. */
+export function waitsOnUser(permissionMode: string | undefined): boolean {
+  return permissionMode !== 'auto' && permissionMode !== 'dontAsk' && permissionMode !== 'bypassPermissions'
+}
+
 /** The ladder's steps: a glow in the band at once, a toast at 30 s, sound and a notification at 2 min. */
 export const TOAST_AFTER_MS = 30_000
 export const ALERT_AFTER_MS = 120_000
@@ -29,7 +34,8 @@ export function notifyCommands(title: string, body: string): string[][] {
   const t = printable(title, 80)
   const b = printable(body, 160)
   return [
-    ['notify-send', '--app-name=Claudinator', '--', t, b],
+    // Some notification servers read markup in the body, so its text is escaped.
+    ['notify-send', '--app-name=Claudinator', '--', t, b.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')],
     ['osascript', '-e', 'on run argv', '-e', 'display notification (item 2 of argv) with title (item 1 of argv)', '-e', 'end run', t, b],
   ]
 }

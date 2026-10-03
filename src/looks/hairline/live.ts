@@ -40,7 +40,7 @@ export function pulseCells(word: string, frame: number): string {
 }
 
 export function clockCells(ms: number): string {
-  return encodeCells([...clockLabel(ms).padStart(CLOCK_COLUMNS)].map(char => ({ char, fg: LIVE.GRAY })))
+  return encodeCells([...clockLabel(ms).padStart(CLOCK_COLUMNS).slice(-CLOCK_COLUMNS)].map(char => ({ char, fg: LIVE.GRAY })))
 }
 
 function wordOf(state: LiveState, frame: number, isInator: boolean): string {

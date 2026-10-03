@@ -41,9 +41,9 @@ function clip(text: string, max: number): string {
   return text.length > max ? text.slice(0, Math.max(0, max - 1)) + '…' : text
 }
 
-// Terminal escape sequences: OSC (titles, hyperlinks) and CSI (colors, cursor moves).
-const OSC = /\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g
-const CSI = /\x1b\[[0-?]*[ -/]*[@-~]/g
+// Terminal escape sequences, 7-bit and 8-bit: OSC (titles, hyperlinks) and CSI (colors, cursor moves).
+const OSC = /(?:\x1b\]|\x9d)[^\x07\x1b\x9c]*(?:\x07|\x1b\\|\x9c)/g
+const CSI = /(?:\x1b\[|\x9b)[0-?]*[ -/]*[@-~]/g
 const OTHER_ESC = /\x1b[@-_]?/g
 
 /**
@@ -53,7 +53,7 @@ const OTHER_ESC = /\x1b[@-_]?/g
  */
 export function printable(text: string, max: number, options: { keepNewlines?: boolean } = {}): string {
   let out = text.replace(OSC, '').replace(CSI, '').replace(OTHER_ESC, '').replace(/\t/g, '  ').replace(/\r\n?/g, '\n')
-  out = options.keepNewlines ? out.replace(/[\x00-\x09\x0b-\x1f\x7f]/g, '') : out.replace(/\n/g, ' ').replace(/[\x00-\x1f\x7f]/g, '')
+  out = options.keepNewlines ? out.replace(/[\x00-\x09\x0b-\x1f\x7f-\x9f]/g, '') : out.replace(/\n/g, ' ').replace(/[\x00-\x1f\x7f-\x9f]/g, '')
   return clip(out, max)
 }
 
