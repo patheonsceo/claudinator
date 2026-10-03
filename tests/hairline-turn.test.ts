@@ -20,6 +20,13 @@ describe('hairline turn pieces', () => {
     expect(text).toContain('41% ctx')
   })
 
+  test('the receipt keeps its stats on one line and clips the rule instead of an ellipsis', async () => {
+    const tree = JSON.stringify(receipt({ durationMs: 24_000, stats: { turn: 1, files: ['/w/a.ts'], add: 1, del: 1, contextPercent: 22 } }, ctxOf({ columns: 94 })))
+    expect(tree, 'the stats never shrink').toContain('"flexShrink":0')
+    expect(tree, 'the rule is clipped').toContain('"overflow":"hidden"')
+    expect(tree, 'no ellipsis at the end of the rule').not.toContain('"wrap":"truncate"')
+  })
+
   test('a receipt without stats shows its duration only', async () => {
     const text = textOf(receipt({ durationMs: 9_000, stats: null }, ctxOf()))
     expect(text).toContain('9.0s')
