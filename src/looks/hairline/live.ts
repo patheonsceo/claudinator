@@ -19,7 +19,8 @@ export const TRACE_COLUMNS = 16
 /** Cells in the accent segment sliding along the trace. */
 const SEGMENT = 5
 /** The trace's resting dashes: a mid gray that stays quiet on dark and light terminals. */
-const TRACE_FAINT = 0x6f7280
+/** Resting dashes: faint against a dark background, and against a light one. */
+const TRACE_FAINT = { dark: 0x4a4d5a, light: 0xc9ccd6 }
 
 export function liveStateOf(spinnerMode: string, running: Running | undefined, elapsedMs: number, cwd: string, message: string | null = null): LiveState {
   const mode: LiveMode = spinnerMode === 'responding' ? 'writing' : spinnerMode === 'tool-use' || spinnerMode === 'tool-input' ? 'running' : 'thinking'
@@ -74,9 +75,10 @@ export function pulseCells(word: string, frame: number): string {
 }
 
 /** Sixteen faint en dashes with a five-cell accent segment sliding left to right, then a short rest. */
-export function traceCells(frame: number): Cell[] {
+export function traceCells(frame: number, isDark = true): Cell[] {
   const pos = ((frame % (TRACE_COLUMNS + SEGMENT + 1)) + TRACE_COLUMNS + SEGMENT + 1) % (TRACE_COLUMNS + SEGMENT + 1)
-  return Array.from({ length: TRACE_COLUMNS }, (_, i) => ({ char: '–', fg: i <= pos && i > pos - SEGMENT ? LIVE.ACCENT : TRACE_FAINT }))
+  const faint = isDark ? TRACE_FAINT.dark : TRACE_FAINT.light
+  return Array.from({ length: TRACE_COLUMNS }, (_, i) => ({ char: '–', fg: i <= pos && i > pos - SEGMENT ? LIVE.ACCENT : faint }))
 }
 
 export function clockCells(ms: number): string {
@@ -96,7 +98,7 @@ function rasterWord(state: LiveState, frame: number): string {
  * every state slides the trace and ticks the clock.
  */
 export function liveFrames(state: LiveState, frame: number): LiveFrame[] {
-  const trace = { key: 'cz-trace', columns: TRACE_COLUMNS, cells: encodeCells(traceCells(frame)) }
+  const trace = { key: 'cz-trace', columns: TRACE_COLUMNS, cells: encodeCells(traceCells(frame, state.isDark !== false)) }
   const clock = { key: 'cz-clock', columns: CLOCK_COLUMNS, cells: clockCells(state.elapsedMs) }
   if (state.mode === 'running') return [trace, clock]
   const word = rasterWord(state, frame)

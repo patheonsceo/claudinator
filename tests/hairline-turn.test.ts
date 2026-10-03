@@ -176,3 +176,13 @@ describe('hairline turn pieces', () => {
     expect(LOOKS.off).toBeNull()
   })
 })
+
+describe('hairline trace on light and dark themes', () => {
+  test('the resting dashes stay faint against either background', async () => {
+    const rest = (isDark: boolean) => traceCells(0, isDark).find(c => c.fg !== LIVE.ACCENT)?.fg
+    expect(rest(true)).toBe(0x4a4d5a)
+    expect(rest(false)).toBe(0xc9ccd6)
+    const frames = (isDark: boolean) => liveFrames({ mode: 'thinking', detail: '', elapsedMs: 0, isDark }, 3).find(f => f.key === 'cz-trace')?.cells
+    expect(frames(true)).not.toBe(frames(false))
+  })
+})
