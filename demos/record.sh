@@ -10,6 +10,8 @@ command -v claude >/dev/null || { echo "claude is not installed" >&2; exit 1; }
 
 # Start each recording clean, even when this script runs from inside a Claude Code session.
 for name in $(compgen -e | grep -E '^CLAUDE'); do unset "$name"; done
+# VHS draws in a full-color browser terminal; tell Claude Code so the theme's exact colors show.
+export COLORTERM=truecolor
 
 mkdir -p demos/out
 if [ "$#" -eq 0 ]; then

@@ -1,0 +1,23 @@
+{
+  "name": "Claudinator Hairline Dark",
+  "background": "#111216",
+  "foreground": "#e8e9ee",
+  "cursorColor": "#a0a3ff",
+  "selectionBackground": "#2a2c3a",
+  "black": "#1a1b21",
+  "red": "#ff7a85",
+  "green": "#7fd1a8",
+  "yellow": "#f2c66d",
+  "blue": "#8fa2ff",
+  "purple": "#c79bff",
+  "cyan": "#6fd0d6",
+  "white": "#c9cbd3",
+  "brightBlack": "#4a4d58",
+  "brightRed": "#ff9aa3",
+  "brightGreen": "#a0e3c1",
+  "brightYellow": "#f7d993",
+  "brightBlue": "#b0beff",
+  "brightPurple": "#dbbdff",
+  "brightCyan": "#96e0e4",
+  "brightWhite": "#f4f5f8"
+}

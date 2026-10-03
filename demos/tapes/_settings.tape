@@ -5,5 +5,4 @@ Set Width 1200
 Set Height 760
 Set Padding 18
 Set Framerate 15
-Set Theme "Catppuccin Mocha"
 Set TypingSpeed 35ms

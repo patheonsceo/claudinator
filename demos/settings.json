@@ -1,3 +1,7 @@
 {
-  "statusLine": { "type": "command", "command": "true" }
+  "statusLine": {
+    "type": "command",
+    "command": "true"
+  },
+  "theme": "custom:claudinator:hairline-dark"
 }

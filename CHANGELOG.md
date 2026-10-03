@@ -11,6 +11,7 @@ All notable changes to Claudinator are recorded here. The format follows
 - Ingredients: Recency fade, Mini diffs, File colors and Quiet.
 - The `/claudinator` picker and the `/look` command, applied live and saved for every session.
 - Per-project settings in `.claude/claudinator.json` (a project cannot turn on Quiet), and defaults in `/config`.
+- Hairline as a Claude Code theme (dark and light) and as color schemes for Ghostty, kitty, WezTerm, Alacritty, Windows Terminal and iTerm2, generated from one palette.
 - This repository as a plugin marketplace, CI, and the demo GIF pipeline.
 - Design spec: looks, ingredients, panes, settings, data handling, testing, media and release process, with evidence from a feasibility spike.
 - Repository foundation: README, license, contribution and security policies, issue and pull request templates.

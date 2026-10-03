@@ -1,0 +1,13 @@
+[colors]
+foreground = "#e8e9ee"
+background = "#111216"
+cursor_bg = "#a0a3ff"
+cursor_border = "#a0a3ff"
+cursor_fg = "#111216"
+selection_bg = "#2a2c3a"
+selection_fg = "#e8e9ee"
+ansi = ["#1a1b21", "#ff7a85", "#7fd1a8", "#f2c66d", "#8fa2ff", "#c79bff", "#6fd0d6", "#c9cbd3"]
+brights = ["#4a4d58", "#ff9aa3", "#a0e3c1", "#f7d993", "#b0beff", "#dbbdff", "#96e0e4", "#f4f5f8"]
+
+[metadata]
+name = "Claudinator Hairline Dark"
