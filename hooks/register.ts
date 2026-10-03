@@ -64,6 +64,11 @@ function isHiddenByQuiet(settings: Settings, row: { tool: string; isErrored: boo
   return settings.ingredients.quiet && isQuietable(row.tool) && !row.isErrored
 }
 
+/** A drawn row with a blank line above it (and below, for a receipt), so each step reads on its own. */
+function spaced(els: ElementTable, row: RenderElement, below = false): RenderElement {
+  return els.Box({ flexDirection: 'column', marginTop: 1, ...(below ? { marginBottom: 1 } : {}), children: [row] })
+}
+
 /** A footnoted row hides only in the terminal, where the receipt that carries its note is drawn. */
 function isFootnoted(settings: Settings, row: { id: string; isErrored: boolean; isInterrupted?: boolean }, surface: string): boolean {
   return settings.ingredients.footnotes && surface === 'terminal' && !row.isErrored && !row.isInterrupted && Model.isNoteShown(model, row.id)
@@ -467,8 +472,8 @@ export const register: Register = (on, opts) => {
     const fade = fadeOf(model.toolTurn.get(row.id), model.turn, settings.ingredients.recency)
     const ctx = ctxOf(e, $.ui.resolve(e), settings, fade)
     if (isFootnoted(settings, row, e.surface)) return ctx.els.Box({})
-    if (isHiddenByQuiet(settings, row)) return look.quietLine(1, ctx)
-    return look.toolRow(row, ctx)
+    if (isHiddenByQuiet(settings, row)) return spaced(ctx.els, look.quietLine(1, ctx))
+    return spaced(ctx.els, look.toolRow(row, ctx))
   }).catch(async ($, e, next) => next(e))
 
   on('ui.render', { component: 'ToolGroup' }, async ($, e, next) => {
@@ -484,8 +489,8 @@ export const register: Register = (on, opts) => {
     const visible = rows.filter(r => !isFootnoted(settings, r, e.surface))
     if (visible.length === 0) return ctx.els.Box({})
     const hidden = visible.filter(r => isHiddenByQuiet(settings, r)).length
-    if (hidden > 0 && hidden === visible.length) return look.quietLine(hidden, ctx)
-    return look.toolGroup(visible, ctx)
+    if (hidden > 0 && hidden === visible.length) return spaced(ctx.els, look.quietLine(hidden, ctx))
+    return spaced(ctx.els, look.toolGroup(visible, ctx))
   }).catch(async ($, e, next) => next(e))
 
   on('ui.render', { component: 'ToolResult' }, async ($, e, next) => {
@@ -523,7 +528,7 @@ export const register: Register = (on, opts) => {
     const stats = Model.receiptFor(model, e.requestId, await $.clock.now())
     const fade = fadeOf(stats?.turn, model.turn, settings.ingredients.recency)
     const ctx = ctxOf(e, $.ui.resolve(e), settings, fade)
-    return look.receipt(receiptData(settings, e.props.durationMs, stats, ctx.columns), ctx)
+    return spaced(ctx.els, look.receipt(receiptData(settings, e.props.durationMs, stats, ctx.columns), ctx), true)
   }).catch(async ($, e, next) => next(e))
 
   on('ui.render', { component: 'Spinner' }, async ($, e, next) => {
