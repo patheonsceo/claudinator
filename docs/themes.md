@@ -36,7 +36,7 @@ Every theme file is generated from one palette per look in [`palettes/`](../pale
 
 ```sh
 node tools/themes.mjs          # regenerate every file
-node --test tools/             # test the generator
+node --test tools/themes.test.mjs             # test the generator
 ```
 
 CI runs `node tools/themes.mjs --check` and fails if a committed file is out of date.
