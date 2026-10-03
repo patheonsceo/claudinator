@@ -6,7 +6,7 @@ All notable changes to Claudinator are recorded here. The format follows
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-10-03
+## [1.0.0] - 2026-10-04
 
 ### Added
 - Five new looks, each with its own Claude Code theme and terminal color schemes: Broadsheet, Mission Control, Prism, Sumi and Blueprint.
