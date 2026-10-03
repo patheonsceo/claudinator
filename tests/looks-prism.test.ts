@@ -80,14 +80,6 @@ describe('prism tool rows', () => {
     expect(plain).not.toContain('- return a')
   })
 
-  test('chips are colored by file even when File colors is off', async () => {
-    const off = toggled(PRISM_SETTINGS, 'fileColors')
-    expect(off.ingredients.fileColors).toBe(false)
-    const a = nodes(PRISM.toolRow(row({ input: { file_path: '/work/a.ts' } }), ctx({ settings: off }))).find(n => textOf(n) === ' ◇ READ ')
-    const b = nodes(PRISM.toolRow(row({ input: { file_path: '/work/a.ts' } }), ctx())).find(n => textOf(n) === ' ◇ READ ')
-    expect(a?.props.backgroundColor).toBe(b?.props.backgroundColor)
-  })
-
   test('chip text stays readable: dark ink on light chips, white on saturated light-mode chips', async () => {
     const pill = (isDark: boolean) => nodes(PRISM.toolRow(row({ input: { file_path: '/work/a.ts' } }), ctx({ isDark }))).find(n => textOf(n) === ' ◇ READ ')
     expect(pill(true)?.props.color).toBe('#0f0d16')

@@ -9,9 +9,9 @@ Ingredients work in any look. Toggle them in the `/claudinator` picker with thei
 | `f` | File colors | Each file keeps one color everywhere it appears. |
 | `q` | Quiet | Hides reads, searches, commands and web fetches, leaving a "· N steps hidden" line. Claude's prose, edits, failures, agents and other tools stay. |
 | `h` | Headlines | When a turn finishes, a short title, taken from the first sentence of Claude's answer, appears above its prompt. |
-| `n` | Footnotes | Reads, searches and commands become numbered marks on Claude's reply, with the notes listed above the receipt. Edits and failures stay in place. Calls made while Footnotes is off stay as rows. |
-| `t` | Time strip | Each receipt adds a bar showing where the turn's time went: thinking, tools, and time spent waiting on you. |
-| `a` | Attention ladder | When Claude waits on your permission: a toast after 30 seconds, then, if you turn them on in `/config`, a short system sound and a desktop notification after 2 minutes. On by default (toast only). |
+| `n` | Footnotes | Reads, searches and web fetches become numbered marks on Claude's reply, with the notes listed on the receipt. Commands, edits, failures and interrupted calls keep their rows, as do calls made by subagents or while Footnotes is off. Terminal only: elsewhere, and on a turn whose receipt could not list its notes, the rows stay. |
+| `t` | Time strip | Each receipt adds a bar showing where the turn's time went: thinking, tools, and time spent waiting on you. Calls that run side by side count once, and a call that asked splits into your wait and its run. Needs 100 columns. |
+| `a` | Attention ladder | When Claude waits on your permission: a toast after 30 seconds, then, if you turn them on in `/config`, a short system sound and a desktop notification after 2 minutes. It stops as soon as you answer, and stays quiet in modes where nobody is asked (auto, don't ask, bypass). On by default (toast only). |
 | `i` | -inator mode | A layer of personality: "Scheming…" while Claude thinks, and a quip on every receipt. |
 
 ## See each one

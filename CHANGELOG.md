@@ -24,7 +24,13 @@ All notable changes to Claudinator are recorded here. The format follows
 ### Security
 - A project file cannot turn on Quiet or Footnotes, and a look it picks never brings them.
 - Every path, command and tool name is made printable before any look draws it.
-- Notification text reaches `notify-send` and `osascript` as plain arguments, never as options or script.
+- Notification text reaches `notify-send` and `osascript` as plain arguments, never as options or script, and is escaped for servers that read markup.
+- A project file cannot turn the attention ladder off.
+
+### Known issues
+- After a combo or a share code, later `/look` switches keep that setup's ingredients instead of bringing the new look's defaults.
+- `/pin` with no note during a running turn says there is nothing to pin, rather than pinning the last finished turn.
+- While a call waits on you, every row redraws once a second, and the animation timer reads your settings ten times a second even when idle. Neither is visible, but both cost a little CPU.
 
 ## [0.1.0] - 2026-10-03
 
