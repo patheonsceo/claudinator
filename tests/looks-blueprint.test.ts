@@ -3,6 +3,7 @@ import { describe, expect, test } from 'claude-code/testing'
 import { DEFAULT_SETTINGS } from '../src/engine/settings'
 import type { Settings } from '../src/engine/settings'
 import { BLUEPRINT } from '../src/looks/blueprint'
+import { CALIPER_COLUMNS, caliperChars, penChars } from '../src/looks/blueprint/live'
 import type { Ctx, LiveMode, ReceiptData, ToolRow } from '../src/looks/look'
 import { DESKTOP_ELS, ctxOf, textOf } from './fixtures'
 
@@ -92,7 +93,9 @@ describe('blueprint tool rows', () => {
     const on = BLUEPRINT.toolRow(EDIT, ctxOf({ settings: DIFFS_ON }))
     expect(textOf(on)).toContain('+ const t = 1')
     expect(textOf(on)).toContain('- return a')
-    expect(JSON.stringify(on)).toContain('"paddingLeft":5')
+    expect(JSON.stringify(on), 'diffs sit one column inside the tag').toContain('"paddingLeft":6')
+    const signs = nodes(on).filter(n => n.type === 'Text' && (textOf(n) === '+' || textOf(n) === '-'))
+    expect([...new Set(signs.map(n => n.props.color))].sort(), 'the sign carries the diff color').toEqual(['error', 'success'])
     const off = textOf(BLUEPRINT.toolRow(EDIT, ctxOf({ settings: DIFFS_OFF })))
     expect(off).not.toContain('const t = 1')
   })
@@ -100,7 +103,7 @@ describe('blueprint tool rows', () => {
   test('a failed call is marked with a cross and FAIL in the error color', async () => {
     const tree = BLUEPRINT.toolRow(row('Bash', { command: 'npm test' }, { isErrored: true, durationMs: 1_200 }), ctxOf())
     const text = textOf(tree)
-    expect(text.startsWith('╳')).toBe(true)
+    expect(text.startsWith(' ╳  EXEC')).toBe(true)
     expect(text).toContain('FAIL')
     expect(nodes(tree).some(n => n.props.color === 'error')).toBe(true)
     expect(textOf(BLUEPRINT.toolRow(row('Bash', { command: 'npm test' }, { isInterrupted: true }), ctxOf()))).toContain('╳')
@@ -130,15 +133,64 @@ describe('blueprint tool rows', () => {
     }
   })
 
-  test('the group names its counts as a dimension line and lists files', async () => {
+  test('a mixed group is one dimension line: counts as the tag, files as the target', async () => {
     const rows = [row('Read', { file_path: '/work/a.ts' }), row('Read', { file_path: '/work/b.ts' }), row('Read', { file_path: '/work/c.ts' }), row('Bash', { command: 'ls' })]
+    const tree = BLUEPRINT.toolGroup(rows, ctxOf())
+    const text = textOf(tree)
+    expect(text.startsWith('├── READ ×3 · EXEC ×1 ── a.ts · b.ts · c.ts')).toBe(true)
+    expect(text).toContain('4 STEPS ─┤')
+    expect((tree as unknown as { props: Record<string, unknown> }).props.flexDirection, 'one line, no file list under it').toBe('row')
+  })
+
+  test('a group of one kind reads like the lookbook: folder ×n, then the count', async () => {
+    const rows = [row('Read', { file_path: '/work/src/auth/a.ts' }, { durationMs: 300 }), row('Read', { file_path: '/work/src/auth/b.ts' }, { durationMs: 400 }), row('Read', { file_path: '/work/src/auth/c.ts' }, { durationMs: 400 })]
     const text = textOf(BLUEPRINT.toolGroup(rows, ctxOf()))
-    expect(text).toContain('├──')
-    expect(text).toContain('SCAN ×3')
-    expect(text).toContain('EXEC ×1')
-    expect(text).toContain('┤')
-    expect(text).toContain('a.ts')
-    expect(text).toContain('c.ts')
+    expect(text.startsWith('├── READ ── src/auth/ ×3')).toBe(true)
+    expect(text).toContain('3 FILES ─┤')
+    expect(text).toContain('1.1s')
+  })
+
+  test('a group of one is drawn as its row', async () => {
+    const one = row('Read', { file_path: '/work/src/cart.js' }, { durationMs: 100 })
+    expect(textOf(BLUEPRINT.toolGroup([one], ctxOf()))).toBe(textOf(BLUEPRINT.toolRow(one, ctxOf())))
+  })
+
+  test('a failed group is crossed and says FAIL', async () => {
+    const text = textOf(BLUEPRINT.toolGroup([row('Bash', { command: 'ls' }, { durationMs: 10 }), row('Bash', { command: 'npm test' }, { isErrored: true, durationMs: 10 })], ctxOf()))
+    expect(text.startsWith(' ╳  EXEC')).toBe(true)
+    expect(text).toContain('FAIL ─┤')
+  })
+
+  test('tags share one 4-cell column, so every target starts at the same place', async () => {
+    const rows = [
+      row('Read', { file_path: '/work/a.ts' }),
+      row('Grep', { pattern: 'refreshToken' }),
+      row('Glob', { pattern: '**/*.ts' }),
+      row('Bash', { command: 'ls' }),
+      row('WebFetch', { url: 'https://x.dev' }),
+      row('Task', { description: 'map the auth module' }),
+      row('TodoWrite', { todos: [{ content: 'one', status: 'in_progress' }] }),
+      row('mcp__srv__do_thing', { arg: 'x' }),
+    ]
+    const at = rows.map(r => textOf(BLUEPRINT.toolRow(r, ctxOf())).indexOf(' ── '))
+    expect(new Set(at)).toEqual(new Set([8]))
+    expect(textOf(BLUEPRINT.toolRow(row('Grep', { pattern: 'refreshToken' }), ctxOf()))).toContain('├── SCAN ── "refreshToken"')
+    expect(textOf(BLUEPRINT.toolRow(row('Bash', { command: 'ls' }), ctxOf()))).toContain('├── EXEC ── ls')
+    expect(textOf(BLUEPRINT.toolRow(row('mcp__srv__do_thing', { arg: 'x' }), ctxOf()))).toContain('├── TOOL ── do_thing')
+  })
+
+  test('a new file is callout NEW, padded to the tag column', async () => {
+    const text = textOf(BLUEPRINT.toolRow(row('Write', { file_path: '/work/src/lock.ts', content: 'a\nb\n' }, { changeIndex: 2, durationMs: 200 }), ctxOf({ settings: DIFFS_OFF })))
+    expect(text.startsWith('(B) NEW  ── src/lock.ts')).toBe(true)
+    expect(text).toMatch(/\+\d+ ─┤/)
+  })
+
+  test('a read measures its lines; a passing command says PASS', async () => {
+    expect(textOf(BLUEPRINT.toolRow(row('Read', { file_path: '/work/a.ts', limit: 142 }, { durationMs: 200 }), ctxOf()))).toContain('142 LINES ─┤')
+    const pass = BLUEPRINT.toolRow(row('Bash', { command: 'pnpm test' }, { durationMs: 4_200 }), ctxOf())
+    expect(textOf(pass)).toContain('PASS ─┤')
+    expect(nodes(pass).some(n => textOf(n) === 'PASS' && n.props.color === 'success')).toBe(true)
+    expect(textOf(BLUEPRINT.toolRow(row('Bash', { command: 'pnpm test' }, { isRunning: true }), ctxOf()))).not.toContain('PASS')
   })
 
   test('the quiet line counts omitted measurements', async () => {
@@ -150,9 +202,10 @@ describe('blueprint tool rows', () => {
 describe('blueprint results', () => {
   test('errors stay visible as a note', async () => {
     const tree = BLUEPRINT.toolResult({ tool: 'Bash', output: { stderr: 'command not found: nmp' }, isErrored: true }, ctxOf())
-    expect(textOf(tree)).toContain('NOTE')
-    expect(textOf(tree)).toContain('command not found: nmp')
-    expect(nodes(tree).some(n => n.props.color === 'error')).toBe(true)
+    expect(textOf(tree)).toBe('NOTE command not found: nmp')
+    expect(nodes(tree).some(n => textOf(n) === 'NOTE' && n.props.color === 'error')).toBe(true)
+    expect(nodes(tree).some(n => textOf(n) === ' command not found: nmp' && n.props.color === 'inactive'), 'the message itself is dim').toBe(true)
+    expect(JSON.stringify(tree)).toContain('"paddingLeft":5')
   })
 
   test('Bash collapses to its last line; reads hide; unknown tools and diff-less edits fall back', async () => {
@@ -168,13 +221,16 @@ describe('blueprint turn pieces', () => {
   test('the prompt is a SPEC and keeps its line breaks', async () => {
     const tree = BLUEPRINT.userMessage('first line\nsecond line', ctxOf())
     expect(textOf(tree)).toBe('SPEC ▸ first line\nsecond line')
-    expect(nodes(tree).some(n => n.props.color === 'suggestion' && n.props.bold === true)).toBe(true)
+    expect(nodes(tree).some(n => textOf(n) === 'SPEC' && n.props.color === 'suggestion' && n.props.bold === true)).toBe(true)
+    expect(nodes(tree).some(n => textOf(n) === ' ▸ ' && n.props.color === 'subtle'), 'a faint pointer').toBe(true)
+    expect(nodes(tree).some(n => textOf(n) === 'first line\nsecond line' && n.props.bold !== true), 'the spec reads as prose').toBe(true)
   })
 
   test('the headline is a numbered sheet with a clipped rule', async () => {
     const tree = BLUEPRINT.headline({ turn: 7, title: 'The refresh race, fixed' }, ctxOf())
     expect(textOf(tree)).toContain('SHEET 7 ─ THE REFRESH RACE, FIXED')
     expect(JSON.stringify(tree)).toContain('"overflow":"hidden"')
+    expect(nodes(tree).some(n => textOf(n) === 'SHEET 7' && n.props.color === 'suggestion'), 'the sheet number is cyan').toBe(true)
   })
 
   test('the receipt is a title block whose rows line up', async () => {
@@ -191,6 +247,11 @@ describe('blueprint turn pieces', () => {
     expect(lines[0]).toContain('┬')
     expect(lines[2]).toContain('┼')
     expect(lines[4]).toContain('┴')
+    expect(nodes(tree).some(n => textOf(n) === '2 FILES' && n.props.color === 'inactive'), 'the file count is dim').toBe(true)
+    const frame = nodes(tree).filter(n => n.type === 'Text' && /^[┌├└]/.test(textOf(n)))
+    expect(frame.length).toBe(3)
+    for (const n of frame) expect(n.props.color, 'the frame is drawn in cyan').toBe('suggestion')
+    expect(col.children.map(textOf).find(l => l.includes('DRAWN'))?.startsWith(' DRAWN: CLAUDE')).toBe(true)
   })
 
   test('without a title the block names the turn', async () => {
@@ -238,9 +299,43 @@ describe('blueprint live line', () => {
     expect(textOf(thinking)).toContain('◎')
     expect(textOf(thinking)).toContain('DRAFTING')
     expect(nodes(thinking).filter(n => n.type === 'Raster').length).toBe(2)
-    expect(textOf(BLUEPRINT.live({ mode: 'running', detail: 'Read src/cart.js', elapsedMs: 0 }, 5, ctxOf()))).toContain('MEASURING')
-    expect(textOf(BLUEPRINT.live({ mode: 'running', detail: 'Read src/cart.js', elapsedMs: 0 }, 5, ctxOf()))).toContain('Read src/cart.js')
     expect(textOf(BLUEPRINT.live({ mode: 'writing', detail: '', elapsedMs: 0 }, 5, ctxOf()))).toContain('ANNOTATING')
+  })
+
+  test('running: MEASURING, the target in dim, then the calipers, then the clock', async () => {
+    const tree = BLUEPRINT.live({ mode: 'running', detail: 'pnpm test auth', activity: 'Running', elapsedMs: 3_000 }, 5, ctxOf())
+    const text = textOf(tree)
+    expect(text.startsWith('◎ MEASURING pnpm test auth')).toBe(true)
+    expect(text, 'the verb is said once').not.toContain('Running')
+    expect(nodes(tree).some(n => textOf(n) === 'pnpm test auth' && n.props.color === 'inactive')).toBe(true)
+    expect(nodes(tree).some(n => textOf(n) === '◎ ' && n.props.color === 'suggestion')).toBe(true)
+    expect(nodes(tree).some(n => textOf(n) === 'MEASURING' && n.props.color === 'suggestion')).toBe(true)
+    const kids = (tree as unknown as { children: Array<{ type: string; props: Record<string, unknown> }> }).children
+    const keys = kids.map(k => (k.type === 'Raster' ? String(k.props.key) : k.type))
+    expect(keys.indexOf('bp-calipers')).toBeGreaterThan(1)
+    expect(keys.indexOf('bp-clock')).toBe(keys.length - 1)
+    const desk = textOf(BLUEPRINT.live({ mode: 'running', detail: 'pnpm test auth', elapsedMs: 3_000 }, 5, ctxOf({ surface: 'desktop', els: DESKTOP_ELS })))
+    expect(desk).toContain('◎ MEASURING pnpm test auth ├')
+    expect(desk).toContain('┤')
+    expect(desk).toContain('0:03')
+  })
+
+  test('the calipers hold their left tick while the dimension grows and shrinks', async () => {
+    const frames = Array.from({ length: 40 }, (_, f) => caliperChars(f))
+    for (const f of frames) {
+      expect([...f].length).toBe(CALIPER_COLUMNS)
+      expect(f.startsWith('├')).toBe(true)
+    }
+    const spans = frames.map(f => f.indexOf('┤'))
+    expect(spans[0]).toBe(1)
+    expect(Math.max(...spans)).toBe(CALIPER_COLUMNS - 1)
+    for (let i = 1; i < spans.length; i++) expect(Math.abs((spans[i] ?? 0) - (spans[i - 1] ?? 0))).toBe(1)
+    expect(frames[2]).toBe('├──┤' + ' '.repeat(CALIPER_COLUMNS - 4))
+  })
+
+  test('the pen traces solid while drafting and en dashes while annotating', async () => {
+    expect(penChars(6, 'thinking').startsWith('├─────╴')).toBe(true)
+    expect(penChars(6, 'writing').startsWith('├–––––╴')).toBe(true)
   })
 
   test('the rasters live draws match the frames it blits', async () => {

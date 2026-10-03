@@ -20,8 +20,11 @@ export const C = {
   warn: 'warning',
 } as const
 
-/** Columns under a row's head where mini diffs start. */
-export const DIFF_INDENT = 5
+/** Columns under a row's head where a failure's NOTE and a command's output start. */
+export const NOTE_INDENT = 5
+
+/** Columns under a row's head where mini diffs start, one inside the notes. */
+export const DIFF_INDENT = 6
 
 /** Below this width, secondary columns (the time strip) are dropped. */
 export const NARROW_COLUMNS = 100
@@ -64,7 +67,7 @@ export function pathLabel(ctx: Ctx, path: string): RenderElement {
 /** A file name alone, in its color when File colors is on. */
 export function fileName(ctx: Ctx, path: string): RenderElement {
   const { dir, base } = splitPath(path, ctx.cwd)
-  return txt(ctx, ctx.settings.ingredients.fileColors ? fileColor(dir + base) : C.dim, base)
+  return txt(ctx, ctx.settings.ingredients.fileColors ? fileColor(dir + base) : C.ink, base)
 }
 
 /** `+12 −3` as colored parts, `±0` when nothing changed. */

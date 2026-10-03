@@ -12,8 +12,8 @@ export function userMessage(text: string, ctx: Ctx): RenderElement {
   return Box({
     flexDirection: 'row',
     children: [
-      fixed(ctx, txt(ctx, C.cyan, 'SPEC ▸ ', { bold: true })),
-      Box({ flexGrow: 1, flexShrink: 1, minWidth: 0, children: Text({ color: tone(C.ink, ctx.fade), bold: ctx.fade === 0, wrap: 'wrap', children: printable(text, 4000, { keepNewlines: true }) }) }),
+      fixed(ctx, [txt(ctx, C.cyan, 'SPEC', { bold: true }), txt(ctx, C.faint, ' ▸ ')]),
+      Box({ flexGrow: 1, flexShrink: 1, minWidth: 0, children: Text({ color: tone(C.ink, ctx.fade), wrap: 'wrap', children: printable(text, 4000, { keepNewlines: true }) }) }),
     ],
   })
 }
@@ -23,7 +23,7 @@ export function headline(h: HeadlineData, ctx: Ctx): RenderElement {
   return ctx.els.Box({
     flexDirection: 'row',
     children: [
-      fixed(ctx, [txt(ctx, C.dim, `SHEET ${h.turn}`), txt(ctx, C.faint, ' ─ ')]),
+      fixed(ctx, [txt(ctx, C.cyan, `SHEET ${h.turn}`), txt(ctx, C.faint, ' ─ ')]),
       shrink(ctx, txt(ctx, C.ink, printable(h.title, 120).toUpperCase(), { bold: true, wrap: 'truncate-end' })),
       fixed(ctx, txt(ctx, C.faint, ' ')),
       rule(ctx),
@@ -75,17 +75,17 @@ const cell = (color: string, text: string, bold = false): Cell => ({ plain: text
 const join = (...cells: Cell[]): Cell => ({ plain: cells.map(c => c.plain).join(''), parts: cells.flatMap(c => c.parts) })
 
 function rowLine(ctx: Ctx, cells: Cell[], widths: number[]): RenderElement {
-  const kids: RenderElement[] = [txt(ctx, C.dim, '│')]
+  const kids: RenderElement[] = [txt(ctx, C.cyan, '│')]
   cells.forEach((c, i) => {
-    kids.push(txt(ctx, C.dim, ' '))
+    kids.push(txt(ctx, C.cyan, ' '))
     for (const p of c.parts) kids.push(txt(ctx, p.color, p.text, p.bold ? { bold: true } : {}))
-    kids.push(txt(ctx, C.dim, ' '.repeat(Math.max(0, (widths[i] ?? 0) - widthOf(c.plain)) + 1) + '│'))
+    kids.push(txt(ctx, C.cyan, ' '.repeat(Math.max(0, (widths[i] ?? 0) - widthOf(c.plain)) + 1) + '│'))
   })
   return ctx.els.Text({ wrap: 'truncate-end', children: kids })
 }
 
 function ruleLine(ctx: Ctx, widths: number[], [l, m, r]: [string, string, string]): RenderElement {
-  return ctx.els.Text({ color: tone(C.dim, ctx.fade), wrap: 'truncate-end', children: l + widths.map(w => '─'.repeat(w + 2)).join(m) + r })
+  return ctx.els.Text({ color: tone(C.cyan, ctx.fade), wrap: 'truncate-end', children: l + widths.map(w => '─'.repeat(w + 2)).join(m) + r })
 }
 
 /** A drawing's title block: boxed rows of cells, every column as wide as its widest cell. */
@@ -130,7 +130,9 @@ function noteLine(ctx: Ctx, note: FootnoteData): RenderElement {
  *   ├─────────────────────────┼──────────┼─────────┤
  *   │ 2 FILES  +103 −10       │ 2:14     │ CTX 41% │
  *   └─────────────────────────┴──────────┴─────────┘
- *   DRAWN: CLAUDE   CHECKED: YOU   SCALE 1:1
+ *    DRAWN: CLAUDE   CHECKED: YOU   SCALE 1:1
+ *
+ * The frame is drawn in dimension cyan; the signature and strip sit one in.
  */
 export function receipt(data: ReceiptData, ctx: Ctx): RenderElement {
   const inator = ctx.settings.ingredients.inator
@@ -141,10 +143,10 @@ export function receipt(data: ReceiptData, ctx: Ctx): RenderElement {
 
   let rows: Cell[][]
   if (s) {
-    const dwg = join(cell(C.dim, 'DWG '), cell(C.ink, `T-${String(s.turn).padStart(2, '0')}`))
-    const rev = join(cell(C.dim, 'REV '), cell(C.ink, 'A'))
+    const dwg = cell(C.ink, `DWG T-${String(s.turn).padStart(2, '0')}`)
+    const rev = cell(C.ink, 'REV A')
     const filesWord = s.files.length === 1 ? 'FILE' : 'FILES'
-    const files = [cell(C.ink, `${s.files.length} ${filesWord}`)]
+    const files = [cell(C.dim, `${s.files.length} ${filesWord}`)]
     if (s.files.length > 0) {
       files.push(cell(C.dim, '  '))
       if (s.add > 0) files.push(cell(C.ok, `+${s.add}`))
@@ -152,7 +154,7 @@ export function receipt(data: ReceiptData, ctx: Ctx): RenderElement {
       if (s.del > 0) files.push(cell(C.err, `−${s.del}`))
       if (s.add === 0 && s.del === 0) files.push(cell(C.dim, '±0'))
     }
-    const ctxCell = join(cell(C.dim, 'CTX '), cell(C.ink, s.contextPercent === undefined ? '—' : `${Math.round(s.contextPercent)}%`))
+    const ctxCell = cell(C.ink, `CTX ${s.contextPercent === undefined ? '—' : `${Math.round(s.contextPercent)}%`}`)
     const filesCell = join(...files)
     const col2 = Math.max(widthOf(dwg.plain), widthOf(clock))
     const col3 = Math.max(widthOf(rev.plain), widthOf(ctxCell.plain))
@@ -166,7 +168,7 @@ export function receipt(data: ReceiptData, ctx: Ctx): RenderElement {
     rows = [[cell(C.ink, clipCells(fullTitle, room), true), cell(C.ink, clock)]]
   }
 
-  const sig = inator ? 'DRAWN: DR. CLAUDE   CHECKED: YOU   SCALE 1:1   EVIL INC.' : 'DRAWN: CLAUDE   CHECKED: YOU   SCALE 1:1'
+  const sig = inator ? ' DRAWN: DR. CLAUDE   CHECKED: YOU   SCALE 1:1   EVIL INC.' : ' DRAWN: CLAUDE   CHECKED: YOU   SCALE 1:1'
   const signature = ctx.els.Text({
     wrap: 'truncate-end',
     children: [txt(ctx, C.dim, sig), ...(inator ? [txt(ctx, C.faint, ' · '), txt(ctx, C.cyan, inatorQuip(s).toUpperCase())] : [])],
@@ -178,7 +180,7 @@ export function receipt(data: ReceiptData, ctx: Ctx): RenderElement {
     signature,
   ]
   if (data.timeStrip && ctx.columns >= NARROW_COLUMNS) {
-    children.push(timeStripRow(ctx, data.timeStrip, { ...stripColors('blueprint', ctx.isDark), indent: 0 }))
+    children.push(timeStripRow(ctx, data.timeStrip, { ...stripColors('blueprint', ctx.isDark), indent: 1 }))
   }
   return ctx.els.Box({ flexDirection: 'column', children })
 }
