@@ -6,6 +6,20 @@ All notable changes to Claudinator are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-05
+
+### Added
+- A working bar under every look's live line while Claude works. With a task list it fills task by task and names the task in hand; without one it shows where the turn's time is going (thinking, tools, waiting on you).
+- Task planning is its own kind of step, with its own mark in every look (PLAN, ≡), and the live line says Planning while Claude ticks a task off. Claude Code's task tools (TaskCreate, TaskUpdate, TaskList) count toward progress as well as TodoWrite.
+
+### Changed
+- The live line and the working bar keep a blank line from the transcript, so they never touch the last row.
+- Headlines skip bare openers ("Done.", "Perfect!"), drop emoji, and keep the `*` in code.
+- Mission Control draws a single command as its row; Prism keeps step counts on one line; Sumi letter-spaces only short headlines.
+
+### Fixed
+- Progress stayed at "0 of 4" when Claude sent task ids as numbers.
+
 ## [1.0.0] - 2026-10-04
 
 ### Added
@@ -48,6 +62,7 @@ All notable changes to Claudinator are recorded here. The format follows
 - Design spec: looks, ingredients, panes, settings, data handling, testing, media and release process, with evidence from a feasibility spike.
 - Repository foundation: README, license, contribution and security policies, issue and pull request templates.
 
-[Unreleased]: https://github.com/patheonsceo/claudinator/compare/claudinator--v1.0.0...HEAD
+[Unreleased]: https://github.com/patheonsceo/claudinator/compare/claudinator--v1.1.0...HEAD
+[1.1.0]: https://github.com/patheonsceo/claudinator/compare/claudinator--v1.0.0...claudinator--v1.1.0
 [1.0.0]: https://github.com/patheonsceo/claudinator/compare/claudinator--v0.1.0...claudinator--v1.0.0
 [0.1.0]: https://github.com/patheonsceo/claudinator/releases/tag/claudinator--v0.1.0
