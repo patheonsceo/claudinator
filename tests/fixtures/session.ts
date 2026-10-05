@@ -10,7 +10,7 @@ export const SESSION: SessionStartInput = { surface: 'terminal', isInteractive: 
  * commands, an empty store (recording writes), no project file, toasts and
  * pane opens. Rows Claudinator passes through draw as "engine".
  */
-export function startsSession(on: On, world: { projectFile?: string; theme?: string } = {}): { saved: Map<string, unknown>; clock: MockClock; toasts: string[] } {
+export function startsSession(on: On, world: { projectFile?: string; theme?: string } = {}): { saved: Map<string, unknown>; clock: MockClock; toasts: string[]; reads: { settings: number } } {
   const saved = new Map<string, unknown>()
   on('session.start', ($, e) => ({ cwd: e.cwd }))
   on('command.register', ($, e) => ({ value: { command: e.name } }))
@@ -26,7 +26,15 @@ export function startsSession(on: On, world: { projectFile?: string; theme?: str
     return { value: undefined }
   })
   on('ui.close', () => ({ value: undefined }))
-  on('settings.read', () => ({ value: world.theme === undefined ? {} : { theme: world.theme } }))
+  // The whole settings file is never what Claudinator should read; the theme comes from /config's rows.
+  const reads = { settings: 0 }
+  on('settings.read', () => {
+    reads.settings += 1
+    return { value: world.theme === undefined ? {} : { theme: world.theme } }
+  })
+  on('config.list', () => ({
+    value: world.theme === undefined ? [] : [{ key: 'theme', label: 'Theme', kind: 'choice' as const, value: world.theme, provider: { plugin: 'engine', tier: 'core' as const }, isLocked: false }],
+  }))
   on('prompt.submit', ($, e) => ({ text: e.text }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('ui.blit', () => ({ value: {} }))
@@ -34,7 +42,7 @@ export function startsSession(on: On, world: { projectFile?: string; theme?: str
   // Claude Code's own drawing: a reply shows its (possibly rewritten) text, anything else 'engine'.
   on('ui.render', ($, e) => ({ type: 'Text', props: {}, children: [e.component === 'AssistantMessage' ? String((e.props as { text?: unknown }).text ?? '') : 'engine'] }))
   const clock = mock.clock(on, { now: 1_000 })
-  return { saved, clock, toasts }
+  return { saved, clock, toasts, reads }
 }
 
 /** A command the user typed at the prompt, in fullscreen. */

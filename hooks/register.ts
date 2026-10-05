@@ -5,7 +5,7 @@
 import { atom, read, update } from 'claude-code'
 import type { ElementTable, EngineInterface, Register, RenderElement, RenderSurface } from 'claude-code'
 
-import { isDarkTheme, ladderActions, notifyCommands, soundCommands, waitsOnUser } from '../src/engine/attention'
+import { isDarkTheme, ladderActions, notifyCommands, soundCommands } from '../src/engine/attention'
 import { comboById } from '../src/engine/combos'
 import { printable } from '../src/engine/format'
 import { fadeOf } from '../src/engine/palette'
@@ -40,8 +40,6 @@ let pins: Pin[] = []
 let navTab: NavigatorTab = 'chapters'
 let ladder = { toasted: false, alerted: false }
 let lastBandSecond = -1
-/** The session's permission mode, as the last tool call reported it. */
-let permissionMode: string | undefined
 /** How long each call's tool itself ran, as Claude Code reports it after the call. */
 const execMs = new Map<string, number>()
 
@@ -108,7 +106,9 @@ async function readProjectLayer($: EngineInterface): Promise<SettingsLayer> {
 
 async function readTheme($: EngineInterface): Promise<void> {
   try {
-    isDark = isDarkTheme((await $.settings.read()).theme)
+    // Only the theme row of /config: Claudinator never reads the settings file itself.
+    const theme = (await $.config.list()).find(row => row.key === 'theme')?.value
+    isDark = isDarkTheme(typeof theme === 'string' ? theme : undefined)
   } catch {
     isDark = true
   }
@@ -308,35 +308,26 @@ export const register: Register = (on, opts) => {
     return result
   })
 
-  // Observers only: the session's permission mode, and how long each tool itself ran.
-  on('classic.UserPromptSubmit', async ($, e, next) => {
-    permissionMode = e.permission_mode
-    return next(e)
-  })
-
+  // Observers only: how long each tool itself ran, for the time strip.
   on('classic.PostToolUse', async ($, e, next) => {
-    permissionMode = e.permission_mode
     if (typeof e.duration_ms === 'number') execMs.set(e.tool_use_id, e.duration_ms)
     return next(e)
   })
 
   on('classic.PostToolUseFailure', async ($, e, next) => {
-    permissionMode = e.permission_mode
     if (typeof e.duration_ms === 'number') execMs.set(e.tool_use_id, e.duration_ms)
     return next(e)
   })
 
-  // Observes the permission verdict only: a call that asks waits on the user, which
-  // starts the attention ladder and keeps that time out of the call's duration.
-  on('tool.check', async ($, e, next) => {
-    const verdict = await next(e)
-    if (e.tool_use_id && verdict.decision === 'ask' && waitsOnUser(permissionMode)) {
-      Model.toolPrompted(model, e.tool_use_id)
-      Model.waitingStarted(model, e.tool_use_id, e.tool, e.input, await $.clock.now())
+  // Observer only, the decision stays the user's: while Claude Code shows a permission dialog,
+  // the call it asks about waits on the user. That starts the attention ladder and keeps the
+  // wait out of the call's duration.
+  on('classic.PermissionRequest', async ($, e, next) => {
+    if (Model.permissionShown(model, e.tool_name, await $.clock.now())) {
       ladder = { toasted: false, alerted: false }
       $.ui.invalidate('ui.render')
     }
-    return verdict
+    return next(e)
   })
 
   on('tool.call', async ($, e, next) => {

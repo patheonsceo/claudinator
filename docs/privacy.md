@@ -7,8 +7,8 @@ Claudinator runs inside Claude Code on your machine. This page lists everything 
 - The details Claude Code passes to each row it draws: tool names, their full inputs (for example a command or the text of an edit), results and durations, your prompts and Claude's replies as they are drawn.
 - Live events in the current session: each prompt you send, each turn starting and ending with Claude's answer, each tool call with its full input and whether it succeeded, and whether Claude Code asked your permission for it.
 - Your session's context use, rate limits and cost after each turn, for receipts and Mission Control's telemetry.
-- From Claude Code's hook events: the session's permission mode, so the attention ladder stays quiet when nobody will be asked, and how long each tool itself ran, for the time strip.
-- Your Claude Code theme setting, to tell light themes from dark.
+- From Claude Code's hook events: when a permission dialog opens (PermissionRequest), so the attention ladder can start, and how long each tool itself ran (PostToolUse), for the time strip. Claudinator only observes these; it never answers a permission request.
+- The theme row of `/config`, to tell light themes from dark. Claudinator never reads your settings file.
 - Its own settings: your saved choice, the plugin's options in `/config`, and `.claude/claudinator.json` in the current project if that file exists.
 
 ## What it keeps
