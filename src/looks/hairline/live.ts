@@ -29,8 +29,9 @@ export function liveStateOf(spinnerMode: string, running: Running | undefined, e
   if (mode === 'running' && running) {
     const facts = factsOf(running.tool, running.input)
     const { dir, base } = facts.isPath ? splitPath(facts.target, cwd) : { dir: '', base: facts.target }
-    detail = `${dir}${base}`.trim()
-    activity = ACTIVITIES[facts.verb] ?? 'Running'
+    // Ticking off a task is planning: the working bar below already names the task.
+    detail = facts.glyph === 'plan' ? '' : `${dir}${base}`.trim()
+    activity = facts.glyph === 'plan' ? 'Planning' : (ACTIVITIES[facts.verb] ?? 'Running')
   }
   // Claude Code's own status (a retry, a backoff, compacting) always wins over our detail.
   if (message) detail = printable(message, 200)

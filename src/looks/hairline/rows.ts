@@ -60,6 +60,7 @@ const NOUNS: Record<Glyph, [string, string]> = {
   agent: ['started', 'agent'],
   edit: ['edited', 'file'],
   create: ['wrote', 'file'],
+  plan: ['updated', 'task'],
   other: ['used', 'tool'],
 }
 

@@ -96,6 +96,8 @@ function clause(glyph: Glyph, calls: Array<{ tool: string; input: unknown }>, cw
       return [{ text: `fetched ${plural(n, 'page')}` }]
     case 'agent':
       return [{ text: n === 1 ? 'briefed an agent' : `briefed ${n} agents` }]
+    case 'plan':
+      return [{ text: otherPhrase(calls) }]
     case 'other':
       return [{ text: otherPhrase(calls).startsWith('used') && only ? `used ${shortName(only.tool)}` : otherPhrase(calls) }]
   }

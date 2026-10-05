@@ -178,6 +178,9 @@ function groupSpan(rows: ToolRow[]): { start: number; width: number } | null {
 }
 
 export function toolGroup(rows: ToolRow[], ctx: Ctx): RenderElement {
+  // A group of one is just that call: draw its row, command and all.
+  const single = rows.length === 1 ? rows[0] : undefined
+  if (single) return toolRow(single, ctx)
   const failed = rows.some(r => r.isErrored || r.isInterrupted)
   const running = rows.some(r => r.isRunning)
   const timed = rows.length > 0 && rows.every(r => r.durationMs !== undefined)

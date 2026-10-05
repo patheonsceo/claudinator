@@ -104,7 +104,7 @@ const ACTIVITY: Record<string, { glyph: Glyph; mark: Mark }> = {
   Running: { glyph: 'run', mark: MARKS.run },
   Fetching: { glyph: 'web', mark: MARKS.web },
   Delegating: { glyph: 'agent', mark: MARKS.agent },
-  Planning: { glyph: 'other', mark: { mark: MARKS.other.mark, word: 'PLAN' } },
+  Planning: { glyph: 'plan', mark: MARKS.plan },
 }
 
 /** The running step as its row would read: the kind's chip, then the target once. */

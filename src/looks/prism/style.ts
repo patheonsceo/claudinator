@@ -64,6 +64,7 @@ export const MARKS: Record<Glyph, Mark> = {
   run: { mark: '›', word: 'RUN' },
   web: { mark: '◎', word: 'WEB' },
   agent: { mark: '✦', word: 'AGENT' },
+  plan: { mark: '≡', word: 'PLAN' },
   other: { mark: '·', word: '' },
 }
 

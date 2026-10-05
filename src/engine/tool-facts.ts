@@ -1,6 +1,6 @@
 import { lastLine, oneLine, plural, printable } from './format'
 
-export type Glyph = 'read' | 'search' | 'edit' | 'create' | 'run' | 'web' | 'agent' | 'other'
+export type Glyph = 'read' | 'search' | 'edit' | 'create' | 'run' | 'web' | 'agent' | 'plan' | 'other'
 
 /** One single-width character per kind of step. */
 export const GLYPHS: Record<Glyph, string> = {
@@ -11,6 +11,7 @@ export const GLYPHS: Record<Glyph, string> = {
   run: '›',
   web: '◎',
   agent: '✦',
+  plan: '≡',
   other: '·',
 }
 
@@ -64,15 +65,15 @@ export function factsOf(tool: string, input: unknown): ToolFacts {
     case 'TodoWrite': {
       const todos = Array.isArray(i.todos) ? i.todos.map(rec) : []
       const active = todos.find(t => t.status === 'in_progress') ?? todos[0]
-      return text(str(active?.content), 'other', 'Todos')
+      return text(str(active?.content), 'plan', 'Todos')
     }
     case 'TaskCreate':
-      return text(str(i.subject), 'other', 'Plan')
+      return text(str(i.subject), 'plan', 'Plan')
     case 'TaskUpdate':
-      return text(`${str(i.status)} #${str(i.taskId)}`.trim(), 'other', 'Task')
+      return text(`${str(i.status)} #${str(i.taskId)}`.trim(), 'plan', 'Task')
     case 'TaskList':
     case 'TaskGet':
-      return text('', 'other', 'Tasks')
+      return text('', 'plan', 'Tasks')
     case 'ToolSearch':
       return text(str(i.query), 'other', 'Load')
     case 'ExitPlanMode':
@@ -155,6 +156,7 @@ const PHRASES: Record<Glyph, [string, string]> = {
   agent: ['started', 'agent'],
   edit: ['edited', 'file'],
   create: ['wrote', 'file'],
+  plan: ['updated', 'task'],
   other: ['used', 'tool'],
 }
 
@@ -170,7 +172,7 @@ export function groupSummary(calls: ReadonlyArray<{ tool: string; input: unknown
   const text = order
     .map(g => {
       const group = byGlyph.get(g) ?? []
-      return g === 'other' ? otherPhrase(group) : `${PHRASES[g][0]} ${plural(group.length, PHRASES[g][1])}`
+      return g === 'other' || g === 'plan' ? otherPhrase(group) : `${PHRASES[g][0]} ${plural(group.length, PHRASES[g][1])}`
     })
     .join(', ')
   return text.charAt(0).toUpperCase() + text.slice(1)

@@ -7,9 +7,11 @@ import { decodeShareCode, encodeShareCode } from '../src/engine/share-code'
 import { DEFAULT_SETTINGS, projectLayerOf, resolveSettings } from '../src/engine/settings'
 import { MISSION } from '../src/looks/mission'
 import { PRISM } from '../src/looks/prism'
+import { SUMI } from '../src/looks/sumi'
 import { clockCells as hairlineClock } from '../src/looks/hairline/live'
 import { clockCells as prismClock } from '../src/looks/prism/live'
-import { factsOf, groupSummary, isFootnotable, otherPhrase } from '../src/engine/tool-facts'
+import { GLYPHS, factsOf, groupSummary, isFootnotable, otherPhrase } from '../src/engine/tool-facts'
+import { liveStateOf } from '../src/looks/hairline/live'
 import { runStatsLine, stripColors, withMarks, workingBarCells, workingBarText } from '../src/looks/common'
 import { SESSION, assistantInput, bandInput, ctxOf, spinnerInput, startsSession, textOf, toolGroupInput, toolUseInput, turnDurationInput } from './fixtures'
 
@@ -511,5 +513,53 @@ describe('polish round 2', () => {
 
   test('a headline keeps the * of code and drops only markdown emphasis', async () => {
     expect(Model.headlineOf('Changed it to **item.price * item.qty** in `total()`. Done.', 'x')).toBe('Changed it to item.price * item.qty in total()')
+  })
+})
+
+describe('polish round 3: the audit', () => {
+  test('task tools are their own kind of step, with a mark of their own', async () => {
+    for (const tool of ['TaskCreate', 'TaskUpdate', 'TaskList', 'TaskGet', 'TodoWrite']) expect(factsOf(tool, {}).glyph, tool).toBe('plan')
+    expect(GLYPHS.plan).toBe('≡')
+    expect(groupSummary([{ tool: 'TaskCreate', input: { subject: 'a' } }, { tool: 'TaskCreate', input: { subject: 'b' } }])).toBe('Planned 2 tasks')
+  })
+
+  test('while Claude ticks off a task, the live line says it is planning, not running a step', async () => {
+    expect(liveStateOf('tool-use', { tool: 'TaskUpdate', input: { taskId: '2', status: 'completed' }, startedAt: 0 }, 0, '/work')).toEqual({ mode: 'running', detail: '', activity: 'Planning', elapsedMs: 0 })
+  })
+
+  test('headlines drop emoji and check marks', async () => {
+    expect(Model.headlineOf('✅ Added empty cart test. All 3 tests pass.', 'x')).toBe('Added empty cart test')
+    expect(Model.headlineOf('🎉 Fixed the refresh race ✔', 'x')).toBe('Fixed the refresh race')
+  })
+})
+
+describe('polish round 3: per look', () => {
+  const row = (tool: string, input: unknown, id = tool) => ({ id, tool, input, isRunning: false, isErrored: false, isInterrupted: false, durationMs: 200 })
+
+  test('Mission draws a group of one as its row, command and all', async () => {
+    const text = textOf(MISSION.toolGroup([row('Bash', { command: 'node --test' })], ctxOf({ settings: resolveSettings([{ look: 'mission' }]) })))
+    expect(text).toContain('node --test')
+    expect(text).not.toContain('×1')
+  })
+
+  test('Prism never wraps a mixed group’s step count', async () => {
+    const tree = PRISM.toolGroup([row('Read', { file_path: '/work/test/cart.test.js' }, 'a'), row('Bash', { command: `find /work -name "*.test.js" ${'x'.repeat(120)}` }, 'b')], ctxOf({ settings: resolveSettings([{ look: 'prism' }]) }))
+    const holder = (t: unknown): Record<string, unknown> | undefined => {
+      if (!t || typeof t !== 'object') return undefined
+      const n = t as { props?: Record<string, unknown>; children?: unknown[] }
+      if ((n.children ?? []).some(c => textOf(c) === '2 steps') && n.props?.flexShrink === 0) return n.props
+      for (const c of n.children ?? []) {
+        const hit = holder(c)
+        if (hit) return hit
+      }
+      return undefined
+    }
+    expect(holder(tree)).toBeDefined()
+  })
+
+  test('Sumi letter-spaces only the first few words of a long headline', async () => {
+    const text = textOf(SUMI.headline({ turn: 1, title: 'The total() function now multiplies item.price by item.qty to count quantities' }, ctxOf({ settings: resolveSettings([{ look: 'sumi' }]) })))
+    expect(text).toContain('t h e')
+    expect(text).not.toContain('m u l t i p l i e s')
   })
 })
