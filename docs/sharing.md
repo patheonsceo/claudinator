@@ -12,7 +12,7 @@ A combo sets a look and a full set of ingredients at once. Apply one from the `/
 | `x` | Doof mode | `doof` | Blueprint | Mini diffs, Headlines, Time strip, -inator mode, Attention |
 | `z` | Zen | `zen` | Sumi | Recency fade, Footnotes, Attention |
 
-![Combos](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.0.0/combos.gif)
+![Combos](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.1.1/combos.gif)
 
 ## Share codes
 

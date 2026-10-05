@@ -6,6 +6,18 @@ All notable changes to Claudinator are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-05
+
+### Changed
+- The attention ladder starts when Claude Code shows a permission dialog (the PermissionRequest event) and only observes it; the decision is always the user's. Permission-mode tracking is gone.
+- The theme is read from the theme row of `/config`; Claudinator never reads the settings file.
+- The starting-look option in `/config` is a plain text value checked in code (the plugin directory does not accept option lists yet).
+- The README lists everything Claudinator reads, sends, runs and hooks.
+- New demo GIFs of every look and ingredient, recorded with an allowlist instead of skipped permissions.
+
+### Fixed
+- The plugin description counted seven looks; there are six.
+
 ## [1.1.0] - 2026-10-05
 
 ### Added
@@ -62,7 +74,8 @@ All notable changes to Claudinator are recorded here. The format follows
 - Design spec: looks, ingredients, panes, settings, data handling, testing, media and release process, with evidence from a feasibility spike.
 - Repository foundation: README, license, contribution and security policies, issue and pull request templates.
 
-[Unreleased]: https://github.com/patheonsceo/claudinator/compare/claudinator--v1.1.0...HEAD
+[Unreleased]: https://github.com/patheonsceo/claudinator/compare/claudinator--v1.1.1...HEAD
+[1.1.1]: https://github.com/patheonsceo/claudinator/compare/claudinator--v1.1.0...claudinator--v1.1.1
 [1.1.0]: https://github.com/patheonsceo/claudinator/compare/claudinator--v1.0.0...claudinator--v1.1.0
 [1.0.0]: https://github.com/patheonsceo/claudinator/compare/claudinator--v0.1.0...claudinator--v1.0.0
 [0.1.0]: https://github.com/patheonsceo/claudinator/releases/tag/claudinator--v0.1.0
