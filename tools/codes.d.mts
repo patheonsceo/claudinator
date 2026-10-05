@@ -2,3 +2,4 @@
 export declare const DEFAULT_CODES: Record<string, string>
 export declare const SHOWCASE_CODES: Record<string, string>
 export declare const RECEIPT: Record<string, (n: number) => string>
+export declare const ALLOWED_TOOLS: string

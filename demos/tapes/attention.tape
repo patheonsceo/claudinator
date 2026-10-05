@@ -4,7 +4,7 @@ Source demos/tapes/_settings.tape
 Source demos/themes/hairline.tape
 
 Hide
-Type "cd demos/fixture && CLAUDE_CODE_NO_FLICKER=1 claude --plugin-dir ../.. --model haiku --settings ../themes/hairline.settings.json" Enter
+Type "cd demos/fixture && CLAUDE_CODE_NO_FLICKER=1 claude --plugin-dir ../.plugin-under-test --model haiku --settings ../themes/hairline.settings.json" Enter
 Sleep 6s
 Type "/look use HL-43H"
 Sleep 800ms

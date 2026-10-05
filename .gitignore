@@ -14,3 +14,4 @@ demos/out/
 # Agent worktrees (local only)
 .claude/worktrees/
 demos/sessions/
+demos/.plugin-under-test/

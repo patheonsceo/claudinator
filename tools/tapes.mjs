@@ -8,7 +8,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { DEFAULT_CODES, RECEIPT } from './codes.mjs'
+import { ALLOWED_TOOLS, DEFAULT_CODES, RECEIPT } from './codes.mjs'
 
 const LOOKS = ['hairline', 'broadsheet', 'mission', 'prism', 'sumi', 'blueprint']
 
@@ -21,11 +21,14 @@ function head(name, look) {
   return [`Output demos/out/${name}.gif`, 'Require claude', 'Source demos/tapes/_settings.tape', `Source demos/themes/${look}.tape`, '']
 }
 
-function start(look, { bypass = true } = {}) {
-  const permissions = bypass ? ' --dangerously-skip-permissions' : ''
+// Sessions load the copy of the plugin record.sh makes: Claude Code asks before any edit inside a
+// loaded plugin's own folder, and demos/fixture lives inside this one. They may edit the fixture and
+// run its tests without asking (ALLOWED_TOOLS); the attention demo keeps every prompt, as it shows one.
+function start(look, { asks = false } = {}) {
+  const permissions = asks ? '' : ` --permission-mode acceptEdits --allowedTools '${ALLOWED_TOOLS}'`
   return [
     'Hide',
-    `Type "cd demos/fixture && CLAUDE_CODE_NO_FLICKER=1 claude --plugin-dir ../.. --model haiku${permissions} --settings ../themes/${look}.settings.json" Enter`,
+    `Type "cd demos/fixture && CLAUDE_CODE_NO_FLICKER=1 claude --plugin-dir ../.plugin-under-test --model haiku${permissions} --settings ../themes/${look}.settings.json" Enter`,
     'Sleep 6s',
     // Pin the exact setup: the plugin store is shared, so never rely on what an earlier session saved.
     ...slash(`/look use ${DEFAULT_CODES[look]}`),
@@ -78,7 +81,7 @@ export function tapes() {
   out.push(toggle('footnotes', 'n', { before: picker(['n'], '500ms') }))
   out.push(
     tape('attention', 'hairline', [
-      ...start('hairline', { bypass: false }),
+      ...start('hairline', { asks: true }),
       'Type "Create a file notes.txt containing the word hello." Enter',
       'Wait+Screen@90s /Do you want/',
       'Show',
