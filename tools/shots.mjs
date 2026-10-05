@@ -4,8 +4,9 @@
 //   node tools/shots.mjs --run sumi # one look
 // Each look gets: done (two finished turns), working (mid-turn), chapters and picker
 // (panes docked), and progress (a run where Claude keeps a task list).
-// Output: .superpowers/screens/<look>-<shot>.png. Projects: .superpowers/shots/<look>,
-// copied fresh from demos/fixture (inside the repo, so Claude Code trusts the folder).
+// Output: .superpowers/screens/<look>-<shot>.png. Projects: demos/sessions/<look>-<run>,
+// copied fresh from demos/fixture into demos/sessions/ (inside the repo, so Claude Code trusts the
+// folder; not under a hidden folder, which Claude Code treats as sensitive and asks about every edit).
 import { execFileSync } from 'node:child_process'
 import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -17,6 +18,9 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = join(root, '.superpowers', 'screens')
 const tapes = join(root, '.superpowers', 'screen-tapes')
 const LOOKS = Object.keys(SHOWCASE_CODES)
+// The sessions load a fresh copy of the plugin: Claude Code asks before any edit inside a loaded
+// plugin's own folder, and the throwaway projects live inside this repository.
+const plugin = join(root, '.superpowers', 'plugin-under-test')
 
 // What the recorded sessions may do without asking: edit files in the throwaway project, keep a
 // task list, and run the fixture's tests or look around. Anything else stops at a permission prompt.
@@ -35,7 +39,7 @@ function start(look, project) {
     'Set Width 1300',
     'Set Height 900',
     'Hide',
-    `Type "cd ${join(root, '.superpowers/shots', `${look}-${project}`)} && CLAUDE_CODE_NO_FLICKER=1 claude --plugin-dir ${root} --model haiku --permission-mode acceptEdits --allowedTools '${ALLOWED}' --settings ${join(root, `demos/themes/${look}.settings.json`)}" Enter`,
+    `Type "cd ${join(root, 'demos/sessions', `${look}-${project}`)} && CLAUDE_CODE_NO_FLICKER=1 claude --plugin-dir ${plugin} --model haiku --permission-mode acceptEdits --allowedTools '${ALLOWED}' --settings ${join(root, `demos/themes/${look}.settings.json`)}" Enter`,
     'Sleep 7s',
     `Type "/look use ${SHOWCASE_CODES[look]}"`,
     'Sleep 800ms',
@@ -97,11 +101,13 @@ for (const look of looks) {
 console.log(`Wrote ${looks.length * 2} tapes to ${tapes}`)
 
 if (process.argv.includes('--run')) {
+  rmSync(plugin, { recursive: true, force: true })
+  for (const part of ['.claude-plugin', 'hooks', 'src', 'themes', 'types']) cpSync(join(root, part), join(plugin, part), { recursive: true })
   const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('CLAUDE')))
   env.COLORTERM = 'truecolor'
   for (const look of looks) {
     for (const project of ['turns', 'progress']) {
-      const dir = join(root, '.superpowers/shots', `${look}-${project}`)
+      const dir = join(root, 'demos/sessions', `${look}-${project}`)
       rmSync(dir, { recursive: true, force: true })
       cpSync(join(root, 'demos/fixture'), dir, { recursive: true })
       console.log(`▶ ${look} ${project}`)
