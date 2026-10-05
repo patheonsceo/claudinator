@@ -352,7 +352,12 @@ export function headlineOf(answer: string | undefined, prompt: string): string {
   // The first sentence that says something: a bare opener ("Done.", "Perfect!") is skipped.
   const firstSentence = (text: string): string => {
     // Markdown marks go (**bold**, `code`, # headings, > quotes); a lone * between words, as in code, stays.
-    let rest = printable(text, 2000).replace(/\*\*|__|`|^#+\s*|^>\s*/gm, '').replace(/\s+/g, ' ').trim()
+    let rest = printable(text, 2000)
+      .replace(/\*\*|__|`|^#+\s*|^>\s*/gm, '')
+      // Emoji and check marks (✅ 🎉 ✔) read as noise in a title.
+      .replace(/[\p{Extended_Pictographic}\u2705\u2714\u2716\uFE0F]/gu, '')
+      .replace(/\s+/g, ' ')
+      .trim()
     while (rest !== '') {
       const match = rest.match(/^(.+?)[.!?:](?:\s|$)/)
       const sentence = (match?.[1] ?? rest).trim()

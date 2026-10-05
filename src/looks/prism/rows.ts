@@ -104,8 +104,9 @@ export function toolGroup(rows: ToolRow[], ctx: Ctx): RenderElement {
   const running = rows.some(r => r.isRunning)
   const isTimed = rows.length > 0 && rows.every(r => r.durationMs !== undefined)
   const parts: RenderElement[] = [chipSlot(ctx, groupChip(ctx, rows, facts)), grow(ctx, Text({ wrap: 'truncate-end', children: groupBody(ctx, rows, facts, isMixed) }))]
-  if (failed) parts.push(txt(ctx, C.err, 'failed'))
-  else if (isMixed && ctx.columns >= NARROW_COLUMNS) parts.push(txt(ctx, C.dim, plural(rows.length, 'step')))
+  // The count and the verdict keep their width; the body truncates instead.
+  if (failed) parts.push(Box({ flexShrink: 0, children: txt(ctx, C.err, 'failed') }))
+  else if (isMixed && ctx.columns >= NARROW_COLUMNS) parts.push(Box({ flexShrink: 0, children: txt(ctx, C.dim, plural(rows.length, 'step')) }))
   if (isTimed) parts.push(timing(ctx, rows.reduce((sum, r) => sum + (r.durationMs ?? 0), 0)))
   else if (running) parts.push(txt(ctx, C.dim, '…'))
   return Box({ flexDirection: 'row', columnGap: 1, children: parts })

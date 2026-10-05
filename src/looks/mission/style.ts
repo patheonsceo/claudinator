@@ -32,6 +32,7 @@ export const TAGS: Record<Glyph, string> = {
   run: 'EXEC',
   web: 'WEB',
   agent: 'AGNT',
+  plan: 'PLAN',
   other: 'TOOL',
 }
 

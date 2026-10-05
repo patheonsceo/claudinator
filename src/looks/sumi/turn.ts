@@ -17,9 +17,14 @@ export function userMessage(text: string, ctx: Ctx): RenderElement {
 }
 
 /** `■ t h e   r e f r e s h   r a c e,   f i x e d`: whole words that fit, lowercase, spaced. */
+const HEADLINE_WORDS = 4
+
 export function headline(h: HeadlineData, ctx: Ctx): RenderElement {
   const width = Math.max(8, ctx.columns - INDENT - 1 - GAP - 1)
-  const title = fitWords(spacedWords(printable(h.title, 120).toLowerCase()), width)
+  // Letter-spacing reads as calm only when short: the first four words, then an ellipsis.
+  const words = printable(h.title, 120).toLowerCase().split(' ').filter(Boolean)
+  const short = words.length > HEADLINE_WORDS ? `${words.slice(0, HEADLINE_WORDS).join(' ')} …` : words.join(' ')
+  const title = fitWords(spacedWords(short), width)
   return line(ctx, [txt(ctx, C.seal, '■'), grow(ctx, txt(ctx, C.dim, title, { wrap: 'truncate-end' }))])
 }
 

@@ -19,6 +19,7 @@ const TAGS: Record<Glyph, string> = {
   agent: 'TASK',
   edit: 'EDIT',
   create: 'NEW',
+  plan: 'PLAN',
   other: 'TOOL',
 }
 
@@ -31,6 +32,7 @@ const COUNTS: Record<Glyph, [string, string]> = {
   agent: ['TASK', 'TASKS'],
   edit: ['FILE', 'FILES'],
   create: ['FILE', 'FILES'],
+  plan: ['TASK', 'TASKS'],
   other: ['CALL', 'CALLS'],
 }
 
