@@ -9,6 +9,10 @@
   },
   "homepage": "https://github.com/patheonsceo/claudinator",
   "repository": "https://github.com/patheonsceo/claudinator",
+  "documentationUrl": "https://github.com/patheonsceo/claudinator/tree/main/docs",
+  "supportUrl": "https://github.com/patheonsceo/claudinator/issues",
+  "privacyPolicyUrl": "https://github.com/patheonsceo/claudinator/blob/main/docs/privacy.md",
+  "termsOfServiceUrl": "https://github.com/patheonsceo/claudinator/blob/main/LICENSE",
   "license": "MIT",
   "keywords": [
     "mods",
