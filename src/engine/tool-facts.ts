@@ -70,7 +70,7 @@ export function factsOf(tool: string, input: unknown): ToolFacts {
     case 'TaskCreate':
       return text(str(i.subject), 'plan', 'Plan')
     case 'TaskUpdate':
-      return text(`${str(i.status)} #${str(i.taskId)}`.trim(), 'plan', 'Task')
+      return text(`${str(i.status)} #${typeof i.taskId === 'number' ? String(i.taskId) : str(i.taskId)}`.trim(), 'plan', 'Task')
     case 'TaskList':
     case 'TaskGet':
       return text('', 'plan', 'Tasks')

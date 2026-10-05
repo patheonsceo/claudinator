@@ -563,3 +563,18 @@ describe('polish round 3: per look', () => {
     expect(text).not.toContain('m u l t i p l i e s')
   })
 })
+
+describe('polish round 4', () => {
+  test('a task id sent as a number still updates the task', async () => {
+    const m = Model.createModel()
+    Model.startTurn(m, 0)
+    Model.taskToolDone(m, 'TaskCreate', { subject: 'Read' }, { task: { id: 1, subject: 'Read' } })
+    Model.taskToolDone(m, 'TaskUpdate', { taskId: 1, status: 'completed' }, { success: true })
+    expect(Model.progressOf(m)).toMatchObject({ done: 1, total: 1 })
+    expect(factsOf('TaskUpdate', { taskId: 2, status: 'completed' }).target).toBe('completed #2')
+  })
+
+  test('removing a mark never leaves a space before punctuation', async () => {
+    expect(Model.headlineOf('All 3 tests pass ✔, including the new empty cart test.', 'x')).toBe('All 3 tests pass, including the new empty cart test')
+  })
+})
