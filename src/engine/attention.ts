@@ -1,10 +1,6 @@
 import { printable } from './format'
 import type { Settings } from './settings'
 
-/** Whether a call that asks is put to the user: not where a classifier or the mode decides. */
-export function waitsOnUser(permissionMode: string | undefined): boolean {
-  return permissionMode !== 'auto' && permissionMode !== 'dontAsk' && permissionMode !== 'bypassPermissions'
-}
 
 /** The ladder's steps: a glow in the band at once, a toast at 30 s, sound and a notification at 2 min. */
 export const TOAST_AFTER_MS = 30_000

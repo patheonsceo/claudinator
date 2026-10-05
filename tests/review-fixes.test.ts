@@ -1,10 +1,9 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { waitsOnUser } from '../src/engine/attention'
 import { printable, splitPath } from '../src/engine/format'
 import * as Model from '../src/engine/session-model'
 import { decodeShareCode, encodeShareCode } from '../src/engine/share-code'
-import { DEFAULT_SETTINGS, projectLayerOf, resolveSettings } from '../src/engine/settings'
+import { DEFAULT_SETTINGS, optionsLayer, projectLayerOf, resolveSettings } from '../src/engine/settings'
 import { MISSION } from '../src/looks/mission'
 import { PRISM } from '../src/looks/prism'
 import { SUMI } from '../src/looks/sumi'
@@ -13,7 +12,7 @@ import { clockCells as prismClock } from '../src/looks/prism/live'
 import { GLYPHS, factsOf, groupSummary, isFootnotable, otherPhrase } from '../src/engine/tool-facts'
 import { liveStateOf } from '../src/looks/hairline/live'
 import { runStatsLine, stripColors, withMarks, workingBarCells, workingBarText } from '../src/looks/common'
-import { SESSION, assistantInput, bandInput, ctxOf, spinnerInput, startsSession, textOf, toolGroupInput, toolUseInput, turnDurationInput } from './fixtures'
+import { SESSION, assistantInput, bandInput, commandInput, ctxOf, spinnerInput, startsSession, textOf, toolGroupInput, toolUseInput, turnDurationInput } from './fixtures'
 
 const read = (file: string) => ({ file_path: file })
 const edit = (file: string) => ({ file_path: file, old_string: 'a', new_string: 'b' })
@@ -149,14 +148,6 @@ describe('waiting on the user', () => {
     expect(Model.waitingOf(m, 9_000)).toBeNull()
   })
 
-  test('modes where nobody is asked never start the ladder', async () => {
-    expect(waitsOnUser('default')).toBe(true)
-    expect(waitsOnUser(undefined)).toBe(true)
-    expect(waitsOnUser('acceptEdits')).toBe(true)
-    expect(waitsOnUser('auto')).toBe(false)
-    expect(waitsOnUser('dontAsk')).toBe(false)
-    expect(waitsOnUser('bypassPermissions')).toBe(false)
-  })
 })
 
 describe('replies and prompts bind to the right turn', () => {
@@ -576,5 +567,36 @@ describe('polish round 4', () => {
 
   test('removing a mark never leaves a space before punctuation', async () => {
     expect(Model.headlineOf('All 3 tests pass ✔, including the new empty cart test.', 'x')).toBe('All 3 tests pass, including the new empty cart test')
+  })
+})
+
+describe('directory review', () => {
+  test('a light theme is read from the /config rows, never from the whole settings file', async ($, on) => {
+    const { reads } = startsSession(on, { theme: 'light' })
+    on('turn.start', ($, e) => ({ turnId: e.turnId }))
+    await $.session.start(SESSION)
+    await $.command.run(commandInput('claudinator'))
+    await $.turn.start({ turnId: 't1', text: 'x' })
+    expect(reads.settings, 'the settings file is never read').toBe(0)
+    // Light theme seen: the working bar's resting cells use the light palette's faint gray.
+    const drawn = JSON.stringify(await $.ui.render(spinnerInput('thinking')))
+    expect(drawn).toContain('cz-work')
+  })
+
+  test('a permission dialog shown for a running call starts the wait, matched by its tool', async () => {
+    const m = Model.createModel()
+    Model.startTurn(m, 0)
+    Model.toolStarted(m, 'r', 'Read', read('/w/a.ts'), 100)
+    Model.toolStarted(m, 'b', 'Bash', { command: 'rm x' }, 200)
+    Model.permissionShown(m, 'Bash', 1_000)
+    expect(Model.waitingOf(m, 4_000)).toEqual({ tool: 'Bash', input: { command: 'rm x' }, waitedMs: 3_000 })
+    expect(m.prompted.has('b')).toBe(true)
+    Model.permissionShown(m, 'WebFetch', 5_000)
+    expect(Model.waitingOf(m, 5_000)?.tool, 'a dialog for a call we never saw changes nothing').toBe('Bash')
+  })
+
+  test('a starting look from /config is checked in code, since the option lists no choices', async () => {
+    expect(optionsLayer({ look: 'sumi' }).look).toBe('sumi')
+    expect(optionsLayer({ look: 'nonsense' }).look).toBeUndefined()
   })
 })

@@ -71,6 +71,19 @@ See [docs/ingredients.md](docs/ingredients.md) for a GIF of each.
 
 Claudinator runs entirely on your machine. It makes no network requests, calls no model, and never reads Claude's history files. It reads the tool calls and prompts it draws, keeps only your choices and pins on disk, and runs a program only if you turn on the attention ladder's sound or desktop notification. A project can never use it to hide tool calls from you. The full list is in [docs/privacy.md](docs/privacy.md).
 
+### What it reads, runs and hooks
+
+- **Reads:** the conversation as Claude Code draws it (your prompts, Claude's replies, each tool call and its result) to restyle those rows; the theme row of `/config`, to choose light or dark colors; and `.claude/claudinator.json` in your project, if it exists. It never reads your settings file or any credential.
+- **Sends:** nothing leaves your machine. The only data that leaves Claudinator is the text of a desktop notification, handed to your own system's notifier, and only if you turn notifications on.
+- **Runs:** nothing by default. With the attention ladder's sound on, after Claude has waited two minutes on your permission it plays a system sound with the first of `pw-play`, `paplay` or `afplay` that is installed. With its notification on, it shows "Claude needs you" and the waiting call (for example `Run npm test`) with `notify-send` or `osascript`. Each runs with fixed arguments, no shell, and the text passed as plain arguments.
+- **Hooks:**
+  - `ui.render` restyles rows, the working line, receipts, prompts and panes. It changes only how they look.
+  - `session.start` and `command.run` register and answer `/claudinator`, `/look`, `/chapters`, `/ledger`, `/pins` and `/pin`.
+  - `prompt.submit`, `turn.start`, `turn.complete` and `tool.call` observe your prompts, turns and tool calls to build headlines, receipts and Chapters. They pass every event on unchanged.
+  - `PostToolUse` and `PostToolUseFailure` read how long each tool ran.
+  - `PermissionRequest` notes when a permission dialog opens, so the attention ladder can start; it never answers it, and the decision is always yours.
+  - `SessionStart` resets its in-memory view of the session after `/clear`, a resume or a fork.
+
 ## Not affiliated with Anthropic
 
 Claudinator is an independent, community-built plugin. It is not made, endorsed or supported by Anthropic. "Claude" and "Claude Code" are trademarks of Anthropic, PBC.

@@ -25,16 +25,7 @@
     "look": {
       "type": "string",
       "title": "Look",
-      "description": "The look Claudinator starts with. Your choice in the /claudinator picker takes precedence.",
-      "options": [
-        "hairline",
-        "broadsheet",
-        "mission",
-        "prism",
-        "sumi",
-        "blueprint",
-        "off"
-      ],
+      "description": "The look Claudinator starts with: hairline, broadsheet, mission, prism, sumi, blueprint or off. Your choice in the /claudinator picker takes precedence.",
       "default": "hairline"
     },
     "attentionSound": {

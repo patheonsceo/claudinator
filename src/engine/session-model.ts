@@ -403,6 +403,22 @@ export function ledgerOf(m: SessionModel): LedgerEntry[] {
   return [...m.ledger.values()].map(e => ({ ...e, turns: [...e.turns] }))
 }
 
+/**
+ * Claude Code opened a permission dialog for a `tool` call: the newest such call still running in
+ * the main loop waits on the user from `now`. False when no running call matches.
+ */
+export function permissionShown(m: SessionModel, tool: string, now: number): boolean {
+  let match: { id: string; input: unknown; startedAt: number } | undefined
+  for (const [id, r] of m.running) {
+    if (r.tool !== tool || m.subagentCalls.has(id) || m.prompted.has(id)) continue
+    if (!match || r.startedAt >= match.startedAt) match = { id, input: r.input, startedAt: r.startedAt }
+  }
+  if (!match) return false
+  m.prompted.add(match.id)
+  waitingStarted(m, match.id, tool, match.input, now)
+  return true
+}
+
 export function waitingStarted(m: SessionModel, id: string, tool: string, input: unknown, now: number): void {
   m.waiting = { id, tool, input, since: now }
 }
