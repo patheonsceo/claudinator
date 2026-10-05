@@ -30,3 +30,9 @@ export const RECEIPT = {
   sumi: () => '■ ───',
   blueprint: n => `DWG T-0${n}`,
 }
+
+/**
+ * What recorded sessions may do without asking: edit files in the throwaway project, keep a task
+ * list, and run the fixture's tests or look around. Anything else stops at a permission prompt.
+ */
+export const ALLOWED_TOOLS = 'Read,Edit,Write,Glob,Grep,TaskCreate,TaskUpdate,TaskList,TaskGet,TodoWrite,ToolSearch,Bash(node --test:*),Bash(find:*),Bash(ls:*),Bash(cat:*)'

@@ -12,7 +12,7 @@ import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { RECEIPT, SHOWCASE_CODES } from './codes.mjs'
+import { ALLOWED_TOOLS, RECEIPT, SHOWCASE_CODES } from './codes.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = join(root, '.superpowers', 'screens')
@@ -22,9 +22,6 @@ const LOOKS = Object.keys(SHOWCASE_CODES)
 // plugin's own folder, and the throwaway projects live inside this repository.
 const plugin = join(root, '.superpowers', 'plugin-under-test')
 
-// What the recorded sessions may do without asking: edit files in the throwaway project, keep a
-// task list, and run the fixture's tests or look around. Anything else stops at a permission prompt.
-const ALLOWED = 'Read,Edit,Write,Glob,Grep,TaskCreate,TaskUpdate,TaskList,TaskGet,TodoWrite,ToolSearch,Bash(node --test:*),Bash(find:*),Bash(ls:*),Bash(cat:*)'
 
 const FIX = 'Fix total() in src/cart.js so it counts item.qty, then run node --test.'
 const SECOND = 'Now add a test for an empty cart, then run node --test again.'
@@ -39,7 +36,7 @@ function start(look, project) {
     'Set Width 1300',
     'Set Height 900',
     'Hide',
-    `Type "cd ${join(root, 'demos/sessions', `${look}-${project}`)} && CLAUDE_CODE_NO_FLICKER=1 claude --plugin-dir ${plugin} --model haiku --permission-mode acceptEdits --allowedTools '${ALLOWED}' --settings ${join(root, `demos/themes/${look}.settings.json`)}" Enter`,
+    `Type "cd ${join(root, 'demos/sessions', `${look}-${project}`)} && CLAUDE_CODE_NO_FLICKER=1 claude --plugin-dir ${plugin} --model haiku --permission-mode acceptEdits --allowedTools '${ALLOWED_TOOLS}' --settings ${join(root, `demos/themes/${look}.settings.json`)}" Enter`,
     'Sleep 7s',
     `Type "/look use ${SHOWCASE_CODES[look]}"`,
     'Sleep 800ms',

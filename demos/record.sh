@@ -14,6 +14,11 @@ for name in $(compgen -e | grep -E '^CLAUDE'); do unset "$name"; done
 export COLORTERM=truecolor
 
 mkdir -p demos/out
+# Load a fresh copy of the plugin: Claude Code asks before any edit inside a loaded plugin's own
+# folder, and demos/fixture sits inside this repository.
+rm -rf demos/.plugin-under-test
+mkdir -p demos/.plugin-under-test
+cp -r .claude-plugin hooks src themes types demos/.plugin-under-test/
 if [ "$#" -eq 0 ]; then
   set -- demos/tapes/[!_]*.tape
 fi
