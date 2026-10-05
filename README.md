@@ -2,7 +2,7 @@
 
 **Give Claude Code a glow-up.** Claudinator restyles the parts of Claude Code you look at all day: tool calls, the thinking line, the line that closes each turn, and the prompt rows. Pick one of six **looks**, mix in **ingredients**, and every change applies live to the session in front of you. Panes let you jump around long sessions, and a share code carries your exact setup to a friend.
 
-![One session switching through all six looks](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.0.0/hero.gif)
+![One session switching through all six looks](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.1.1/hero.gif)
 
 ## Install
 

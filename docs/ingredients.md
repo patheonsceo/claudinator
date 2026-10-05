@@ -17,31 +17,31 @@ Ingredients work in any look. Toggle them in the `/claudinator` picker with thei
 ## See each one
 
 ### Mini diffs
-![Mini diffs](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.0.0/ingredient-mini-diffs.gif)
+![Mini diffs](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.1.1/ingredient-mini-diffs.gif)
 
 ### Recency fade
-![Recency fade](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.0.0/ingredient-recency.gif)
+![Recency fade](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.1.1/ingredient-recency.gif)
 
 ### File colors
-![File colors](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.0.0/ingredient-file-colors.gif)
+![File colors](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.1.1/ingredient-file-colors.gif)
 
 ### Quiet
-![Quiet](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.0.0/ingredient-quiet.gif)
+![Quiet](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.1.1/ingredient-quiet.gif)
 
 ### Headlines
-![Headlines](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.0.0/ingredient-headlines.gif)
+![Headlines](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.1.1/ingredient-headlines.gif)
 
 ### Footnotes
-![Footnotes](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.0.0/ingredient-footnotes.gif)
+![Footnotes](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.1.1/ingredient-footnotes.gif)
 
 ### Time strip
-![Time strip](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.0.0/ingredient-time-strip.gif)
+![Time strip](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.1.1/ingredient-time-strip.gif)
 
 ### Attention ladder
-![Attention ladder](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.0.0/attention.gif)
+![Attention ladder](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.1.1/attention.gif)
 
 ### -inator mode
-![-inator mode](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.0.0/ingredient-inator.gif)
+![-inator mode](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.1.1/ingredient-inator.gif)
 
 ## Sound and notifications
 

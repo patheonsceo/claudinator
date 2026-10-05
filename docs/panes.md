@@ -8,7 +8,7 @@ The picker shows the look you are using and how many ingredients are on, then ev
 
 One pane, three tabs. Open it with a command, switch tabs with `c`, `l` and `p`, and close it with Esc. On a wide fullscreen terminal it docks beside the transcript; otherwise it sits above the prompt.
 
-![Chapters, Ledger and Pins](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.0.0/navigator.gif)
+![Chapters, Ledger and Pins](https://raw.githubusercontent.com/patheonsceo/claudinator/media/1.1.1/navigator.gif)
 
 ### Chapters (`/chapters`)
 
