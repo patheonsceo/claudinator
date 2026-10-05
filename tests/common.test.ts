@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { inatorQuip, inatorWord, noteText, progressStrip, runStatsLine, stripColors, superscript, timeStripSegments } from '../src/looks/common'
+import { inatorQuip, inatorWord, noteText, runStatsLine, stripColors, superscript, timeStripSegments } from '../src/looks/common'
 import { ctxOf, textOf } from './fixtures'
 
 describe('common look helpers', () => {
@@ -37,13 +37,6 @@ describe('time under each run, and live task progress', () => {
     expect(line).toContain('waiting on you 0:14')
     expect(line).toContain('3 of 5 tasks')
     expect(textOf(runStatsLine(ctxOf(), { thinkingMs: 5_000, toolsMs: 600, waitingMs: 0 }, stripColors('hairline', true)))).not.toContain('waiting')
-  })
-
-  test('the live strip fills task by task and names the active one', async () => {
-    const text = textOf(progressStrip(ctxOf({ columns: 120 }), { done: 2, total: 4, active: 'Writing tests' }, stripColors('hairline', true)))
-    expect(text).toMatch(/■+ ■+ ■+ □+/)
-    expect(text).toContain('2 of 4')
-    expect(text).toContain('Writing tests')
   })
 
   test('every look has three distinct colors, in dark and in light', async () => {

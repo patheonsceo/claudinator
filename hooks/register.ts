@@ -10,12 +10,14 @@ import { comboById } from '../src/engine/combos'
 import { printable } from '../src/engine/format'
 import { fadeOf } from '../src/engine/palette'
 import * as Model from '../src/engine/session-model'
+import { encodeCells } from '../src/engine/raster'
 import { DEFAULT_SETTINGS, LOOK_LABELS, changedIngredient, changedLook, isLookId, layerOf, optionsLayer, projectLayerOf, resolveSettings } from '../src/engine/settings'
 import type { Settings, SettingsLayer } from '../src/engine/settings'
 import { decodeShareCode, encodeShareCode } from '../src/engine/share-code'
 import { factsOf, isFootnotable, isQuietable } from '../src/engine/tool-facts'
 import { LOOKS } from '../src/looks'
-import { progressStrip, stripColors, waitingBand, withMarks } from '../src/looks/common'
+import { stripColors, waitingBand, withMarks, workingBarCells, workingBarText } from '../src/looks/common'
+import type { StripColors, WorkData } from '../src/looks/common'
 import { liveStateOf } from '../src/looks/hairline/live'
 import type { Ctx, LiveState, Look, ReceiptData, ToolRow, UsageData } from '../src/looks/look'
 import { navigatorView } from '../src/panes/navigator'
@@ -32,7 +34,7 @@ let cwd = ''
 let frame = 0
 let isFullscreen = true
 let isDark = true
-let live: { requestId: string; state: LiveState } | null = null
+let live: { requestId: string; state: LiveState; barWidth: number } | null = null
 let usage: UsageData | null = null
 let pins: Pin[] = []
 let navTab: NavigatorTab = 'chapters'
@@ -185,13 +187,23 @@ async function tick($: EngineInterface): Promise<void> {
   const look = LOOKS[settings.look]
   if (!look) return
   const state = { ...target.state, elapsedMs: (await $.clock.now()) - model.turnStartedAt }
-  for (const f of look.liveFrames(state, frame)) {
+  const work = { key: 'cz-work', columns: target.barWidth, cells: encodeCells(workingBarCells(workOf(await $.clock.now()), barColors(settings), isDark, target.barWidth, frame)) }
+  for (const f of [...look.liveFrames(state, frame), work]) {
     const result = await $.ui.blit({ requestId: target.requestId, key: f.key, columns: f.columns, rows: 1, cells: f.cells })
     if (result && typeof result === 'object' && 'deny' in result) {
       live = null
       return
     }
   }
+}
+
+/** What the working bar shows now: the turn's time so far and Claude's task list, when it keeps one. */
+function workOf(now: number): WorkData {
+  return { ...Model.liveTimes(model, now), progress: Model.progressOf(model) }
+}
+
+function barColors(settings: Settings): StripColors {
+  return stripColors(settings.look === 'off' ? 'hairline' : settings.look, isDark)
 }
 
 async function refreshUsage($: EngineInterface): Promise<number | undefined> {
@@ -447,11 +459,7 @@ export const register: Register = (on, opts) => {
     const waiting = settings.ingredients.attention ? Model.waitingOf(model, await $.clock.now()) : null
     // The band is as wide as the body beside any docked pane, not the whole terminal.
     const ctx = ctxOf({ surface: e.surface, viewport: { columns: e.props.bodyColumns } }, $.ui.resolve(e), settings, 0)
-    const own = look.band({ usage, waiting, isWorking: model.isWorking }, ctx) ?? (waiting ? waitingBand(ctx, waiting) : null)
-    // While Claude works through its todo list, how far it is sits right above the prompt.
-    const progress = settings.ingredients.timeStrip ? Model.progressOf(model) : null
-    const strip = progress ? progressStrip(ctx, progress, stripColors(settings.look === 'off' ? 'hairline' : settings.look, isDark)) : null
-    const drawn = strip && own ? ctx.els.Box({ flexDirection: 'column', children: [strip, own] }) : (strip ?? own)
+    const drawn = look.band({ usage, waiting, isWorking: model.isWorking }, ctx) ?? (waiting ? waitingBand(ctx, waiting) : null)
     if (!drawn) return next(e)
     const others = await next(e)
     return ctx.els.Box({ flexDirection: 'column', children: [drawn, others] as RenderElement[] })
@@ -544,7 +552,15 @@ export const register: Register = (on, opts) => {
     if (!look) return next(e)
     const elapsed = model.isWorking ? (await $.clock.now()) - model.turnStartedAt : 0
     const state = { ...liveStateOf(e.props.mode, Model.latestStep(model), elapsed, cwd, e.props.message), inator: settings.ingredients.inator, isDark }
-    live = e.surface === 'terminal' ? { requestId: e.requestId, state } : null
-    return look.live(state, frame, ctxOf(e, $.ui.resolve(e), settings, 0))
+    const ctx = ctxOf(e, $.ui.resolve(e), settings, 0)
+    const barWidth = Math.max(20, Math.min(120, ctx.columns - 4))
+    live = e.surface === 'terminal' ? { requestId: e.requestId, state, barWidth } : null
+    // The working bar sits under the live line, always, and both keep a blank line from the transcript.
+    const work = workOf(await $.clock.now())
+    const bar =
+      e.surface === 'terminal' && 'Raster' in ctx.els
+        ? ctx.els.Raster({ key: 'cz-work', columns: barWidth, rows: 1, cells: encodeCells(workingBarCells(work, barColors(settings), isDark, barWidth, frame)) })
+        : ctx.els.Text({ color: 'inactive', children: workingBarText(work) })
+    return ctx.els.Box({ flexDirection: 'column', marginTop: 1, children: [look.live(state, frame, ctx), bar] })
   }).catch(async ($, e, next) => next(e))
 }

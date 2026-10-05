@@ -351,7 +351,8 @@ export function completeTurn(m: SessionModel, now: number, contextPercent?: numb
 export function headlineOf(answer: string | undefined, prompt: string): string {
   // The first sentence that says something: a bare opener ("Done.", "Perfect!") is skipped.
   const firstSentence = (text: string): string => {
-    let rest = printable(text, 2000).replace(/[*_`#>]+/g, '').replace(/\s+/g, ' ').trim()
+    // Markdown marks go (**bold**, `code`, # headings, > quotes); a lone * between words, as in code, stays.
+    let rest = printable(text, 2000).replace(/\*\*|__|`|^#+\s*|^>\s*/gm, '').replace(/\s+/g, ' ').trim()
     while (rest !== '') {
       const match = rest.match(/^(.+?)[.!?:](?:\s|$)/)
       const sentence = (match?.[1] ?? rest).trim()
@@ -475,6 +476,21 @@ export function taskToolDone(m: SessionModel, tool: string, input: unknown, resu
   } else return
   m.todos = [...m.tasks.values()]
   m.todosTurn = m.turn
+}
+
+/** Where the running turn's time has gone so far: calls still running and a wait still open count up to now. */
+export function liveTimes(m: SessionModel, now: number): { thinkingMs: number; toolsMs: number; waitingMs: number } {
+  const open: Span[] = []
+  for (const [id, r] of m.running) {
+    if (m.subagentCalls.has(id) || m.toolTurn.get(id) !== m.turn) continue
+    const isWaiting = m.waiting?.id === id
+    if (!isWaiting) open.push({ start: r.startedAt, end: now, isWaiting: false })
+  }
+  if (m.waiting) open.push({ start: m.waiting.since, end: now, isWaiting: true })
+  const spans = [...m.spans, ...open]
+  const busyMs = coveredMs(spans)
+  const waitingMs = coveredMs(spans.filter(s => s.isWaiting))
+  return { thinkingMs: Math.max(0, now - m.turnStartedAt - busyMs), toolsMs: busyMs - waitingMs, waitingMs }
 }
 
 /** How far through its todo list Claude is, while a turn runs that wrote one; otherwise null. */
