@@ -73,6 +73,8 @@ export function factsOf(tool: string, input: unknown): ToolFacts {
     case 'TaskList':
     case 'TaskGet':
       return text('', 'other', 'Tasks')
+    case 'ToolSearch':
+      return text(str(i.query), 'other', 'Load')
     case 'ExitPlanMode':
       return text('', 'other', 'Plan')
     default: {
@@ -159,14 +161,30 @@ const PHRASES: Record<Glyph, [string, string]> = {
 /** `Read 2 files, ran 1 command`: a folded group in one phrase. */
 export function groupSummary(calls: ReadonlyArray<{ tool: string; input: unknown }>): string {
   const order: Glyph[] = []
-  const counts = new Map<Glyph, number>()
+  const byGlyph = new Map<Glyph, Array<{ tool: string; input: unknown }>>()
   for (const call of calls) {
     const glyph = factsOf(call.tool, call.input).glyph
-    if (!counts.has(glyph)) order.push(glyph)
-    counts.set(glyph, (counts.get(glyph) ?? 0) + 1)
+    if (!byGlyph.has(glyph)) order.push(glyph)
+    byGlyph.set(glyph, [...(byGlyph.get(glyph) ?? []), call])
   }
-  const text = order.map(g => `${PHRASES[g][0]} ${plural(counts.get(g) ?? 0, PHRASES[g][1])}`).join(', ')
+  const text = order
+    .map(g => {
+      const group = byGlyph.get(g) ?? []
+      return g === 'other' ? otherPhrase(group) : `${PHRASES[g][0]} ${plural(group.length, PHRASES[g][1])}`
+    })
+    .join(', ')
   return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
+const TASK_TOOLS = new Set(['TaskCreate', 'TaskUpdate', 'TaskList', 'TaskGet', 'TodoWrite'])
+
+/** Calls with no kind of their own, named by what they did when they share a purpose. */
+export function otherPhrase(calls: ReadonlyArray<{ tool: string; input: unknown }>): string {
+  const n = calls.length
+  if (n > 0 && calls.every(c => c.tool === 'TaskCreate')) return `planned ${plural(n, 'task')}`
+  if (n > 0 && calls.every(c => TASK_TOOLS.has(c.tool))) return 'updated the task list'
+  if (n > 0 && calls.every(c => c.tool === 'ToolSearch')) return n === 1 ? 'loaded a tool' : `loaded ${plural(n, 'tool')}`
+  return `used ${plural(n, 'tool')}`
 }
 
 /** The last meaningful line a Bash call printed, or empty. */

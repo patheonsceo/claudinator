@@ -9,9 +9,9 @@ import { MISSION } from '../src/looks/mission'
 import { PRISM } from '../src/looks/prism'
 import { clockCells as hairlineClock } from '../src/looks/hairline/live'
 import { clockCells as prismClock } from '../src/looks/prism/live'
-import { factsOf, isFootnotable } from '../src/engine/tool-facts'
-import { runStatsLine, stripColors, withMarks } from '../src/looks/common'
-import { SESSION, assistantInput, bandInput, ctxOf, startsSession, textOf, toolGroupInput, toolUseInput, turnDurationInput } from './fixtures'
+import { factsOf, groupSummary, isFootnotable, otherPhrase } from '../src/engine/tool-facts'
+import { runStatsLine, stripColors, withMarks, workingBarCells, workingBarText } from '../src/looks/common'
+import { SESSION, assistantInput, bandInput, ctxOf, spinnerInput, startsSession, textOf, toolGroupInput, toolUseInput, turnDurationInput } from './fixtures'
 
 const read = (file: string) => ({ file_path: file })
 const edit = (file: string) => ({ file_path: file, old_string: 'a', new_string: 'b' })
@@ -305,22 +305,22 @@ describe('time under every run, progress above the prompt', () => {
     expect(textOf(await $.ui.render(receiptOf('r2')))).toContain('thinking 0:03')
   })
 
-  test('while Claude works through a todo list, the band above the prompt shows how far it is', async ($, on) => {
+  test('while Claude works through a todo list, the working bar shows how far it is', async ($, on) => {
     const { saved } = startsSession(on)
     saved.set('settings', { ingredients: { timeStrip: true } })
     on('tool.call', () => ({ result: 'ok' }))
     on('turn.start', ($, e) => ({ turnId: e.turnId }))
     await $.session.start(SESSION)
     await $.turn.start({ turnId: 't1', text: 'x' })
-    expect(textOf(await $.ui.render(bandInput()))).not.toContain(' of ')
+    expect(textOf(await $.ui.render(spinnerInput('thinking', 'desktop')))).not.toContain(' of ')
     await $.tool.call({ tool: 'TodoWrite', todos: [
       { content: 'Read the cart', activeForm: 'Reading the cart', status: 'completed' },
       { content: 'Fix total', activeForm: 'Fixing total', status: 'in_progress' },
       { content: 'Run tests', activeForm: 'Running tests', status: 'pending' },
     ] } as never)
-    const band = textOf(await $.ui.render(bandInput()))
-    expect(band).toContain('1 of 3')
-    expect(band).toContain('Fixing total')
+    const bar = textOf(await $.ui.render(spinnerInput('thinking', 'desktop')))
+    expect(bar).toContain('1 of 3 · Fixing total')
+    expect(textOf(await $.ui.render(bandInput())), 'the band no longer repeats it').not.toContain('1 of 3')
   })
 })
 
@@ -441,5 +441,75 @@ describe('live progress from Claude Code’s task tools', () => {
   test('task tool rows say what they do', async () => {
     expect(factsOf('TaskCreate', { subject: 'Fix total' })).toMatchObject({ verb: 'Plan', target: 'Fix total' })
     expect(factsOf('TaskUpdate', { taskId: '2', status: 'completed' })).toMatchObject({ verb: 'Task', target: 'completed #2' })
+  })
+})
+
+describe('the live line keeps its distance', () => {
+  test('the working line above the prompt has a blank line above it, so it never touches the last row', async ($, on) => {
+    startsSession(on)
+    on('turn.start', ($, e) => ({ turnId: e.turnId }))
+    await $.session.start(SESSION)
+    await $.turn.start({ turnId: 't1', text: 'x' })
+    const drawn = (await $.ui.render(spinnerInput('thinking'))) as { props?: Record<string, unknown> }
+    expect(drawn.props?.marginTop).toBe(1)
+  })
+})
+
+describe('a working bar, always, while Claude works', () => {
+  test('the turn so far splits into thinking, tools and waiting, counting a running call and an open wait', async () => {
+    const m = Model.createModel()
+    Model.startTurn(m, 0)
+    Model.toolStarted(m, 'a', 'Read', read('/w/a.ts'), 1_000)
+    Model.toolFinished(m, 'a', 'Read', read('/w/a.ts'), 3_000, false)
+    Model.toolStarted(m, 'b', 'Bash', { command: 'npm test' }, 5_000)
+    expect(Model.liveTimes(m, 8_000)).toEqual({ thinkingMs: 3_000, toolsMs: 5_000, waitingMs: 0 })
+    Model.waitingStarted(m, 'c', 'Bash', { command: 'rm x' }, 8_000)
+    expect(Model.liveTimes(m, 10_000)).toEqual({ thinkingMs: 3_000, toolsMs: 5_000, waitingMs: 2_000 })
+  })
+
+  test('without a task list the bar reads the clock and where the time went', async () => {
+    const text = workingBarText({ thinkingMs: 30_000, toolsMs: 12_000, waitingMs: 0, progress: null })
+    expect(text).toBe('thinking 0:30 · tools 0:12')
+    const cells = workingBarCells({ thinkingMs: 30_000, toolsMs: 12_000, waitingMs: 0, progress: null }, stripColors('hairline', true), true, 80, 3)
+    expect(cells.length).toBe(80)
+    expect(cells.map(c => c.char).join('')).toContain('thinking 0:30 · tools 0:12')
+  })
+
+  test('with a task list the bar counts tasks and names the one in hand', async () => {
+    const work = { thinkingMs: 1_000, toolsMs: 0, waitingMs: 0, progress: { done: 2, total: 4, active: 'Fixing total' } }
+    expect(workingBarText(work)).toBe('2 of 4 · Fixing total')
+    const chars = workingBarCells(work, stripColors('hairline', true), true, 80, 0).map(c => c.char).join('')
+    expect(chars).toMatch(/■+ ■+ ■+ □+/)
+    expect(chars).toContain('2 of 4 · Fixing total')
+  })
+
+  test('the live line draws the bar under itself, on the terminal as cells it can animate', async ($, on) => {
+    startsSession(on)
+    on('turn.start', ($, e) => ({ turnId: e.turnId }))
+    await $.session.start(SESSION)
+    await $.turn.start({ turnId: 't1', text: 'x' })
+    const drawn = JSON.stringify(await $.ui.render(spinnerInput('thinking')))
+    expect(drawn).toContain('"key":"cz-work"')
+    expect(textOf(await $.ui.render(spinnerInput('thinking', 'desktop')))).toContain('thinking')
+  })
+})
+
+describe('polish round 2', () => {
+  test('task planning and tool loading are named, not "used 5 tools"', async () => {
+    const create = (s: string) => ({ tool: 'TaskCreate', input: { subject: s } })
+    expect(otherPhrase([create('a'), create('b'), create('c'), create('d')])).toBe('planned 4 tasks')
+    expect(otherPhrase([create('a'), { tool: 'TaskUpdate', input: { taskId: '1', status: 'completed' } }])).toBe('updated the task list')
+    expect(otherPhrase([{ tool: 'ToolSearch', input: { query: 'select:TaskCreate' } }])).toBe('loaded a tool')
+    expect(otherPhrase([{ tool: 'mcp__x__y', input: {} }, { tool: 'TaskCreate', input: {} }])).toBe('used 2 tools')
+    expect(groupSummary([create('a'), create('b'), { tool: 'Read', input: { file_path: '/w/a.ts' } }])).toBe('Planned 2 tasks, read 1 file')
+    expect(factsOf('ToolSearch', { query: 'select:TaskCreate' })).toMatchObject({ verb: 'Load', target: 'select:TaskCreate' })
+  })
+
+  test('the working bar leaves the clock to the line above it', async () => {
+    expect(workingBarText({ thinkingMs: 30_000, toolsMs: 12_000, waitingMs: 0, progress: null })).toBe('thinking 0:30 · tools 0:12')
+  })
+
+  test('a headline keeps the * of code and drops only markdown emphasis', async () => {
+    expect(Model.headlineOf('Changed it to **item.price * item.qty** in `total()`. Done.', 'x')).toBe('Changed it to item.price * item.qty in total()')
   })
 })

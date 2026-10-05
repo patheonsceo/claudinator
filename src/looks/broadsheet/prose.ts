@@ -1,5 +1,5 @@
 import { oneLine, plural, splitPath } from '../../engine/format'
-import { factsOf } from '../../engine/tool-facts'
+import { factsOf, otherPhrase } from '../../engine/tool-facts'
 import type { Glyph } from '../../engine/tool-facts'
 
 /** A run of a sentence; `path` marks a file name, which File colors may paint. */
@@ -97,7 +97,7 @@ function clause(glyph: Glyph, calls: Array<{ tool: string; input: unknown }>, cw
     case 'agent':
       return [{ text: n === 1 ? 'briefed an agent' : `briefed ${n} agents` }]
     case 'other':
-      return [{ text: only ? `used ${shortName(only.tool)}` : `used ${plural(n, 'tool')}` }]
+      return [{ text: otherPhrase(calls).startsWith('used') && only ? `used ${shortName(only.tool)}` : otherPhrase(calls) }]
   }
 }
 

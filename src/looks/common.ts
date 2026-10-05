@@ -3,6 +3,7 @@ import type { RenderElement } from 'claude-code'
 import { clockLabel, formatDuration, splitPath } from '../engine/format'
 import { tone } from '../engine/palette'
 import type { Progress, TurnStats } from '../engine/session-model'
+import type { Cell } from '../engine/raster'
 import { factsOf } from '../engine/tool-facts'
 import type { Ctx, FootnoteData, TimeStripData, WaitingData } from './look'
 
@@ -80,33 +81,6 @@ export function runStatsLine(ctx: Ctx, data: TimeStripData, style: StripColors &
   return Box({ flexDirection: 'row', columnGap: 1, paddingLeft: style.indent ?? 3, height: 1, overflow: 'hidden', children })
 }
 
-/**
- * Live progress above the prompt while Claude works through its todo list:
- * one gridded block per task (done, the active one, then those to come) with
- * a gap between tasks, the count, and what Claude is doing now.
- */
-export function progressStrip(ctx: Ctx, progress: Progress, style: StripColors): RenderElement {
-  const { Box, Text } = ctx.els
-  const cells = Math.max(1, Math.min(6, Math.floor(Math.min(36, ctx.columns - 30) / Math.max(1, progress.total))))
-  const bar: RenderElement[] = []
-  for (let i = 0; i < progress.total; i++) {
-    if (i > 0) bar.push(Text({ children: ' ' }))
-    const isDone = i < progress.done
-    const isActive = i === progress.done
-    bar.push(Text({ color: isDone ? style.thinking : isActive ? style.tools : 'subtle', children: (isDone || isActive ? '■' : '□').repeat(cells) }))
-  }
-  return Box({
-    flexDirection: 'row',
-    columnGap: 2,
-    height: 1,
-    overflow: 'hidden',
-    children: [
-      Box({ flexShrink: 0, children: [Text({ children: bar })] }),
-      Box({ flexShrink: 0, children: [Text({ bold: true, color: style.thinking, children: `${progress.done} of ${progress.total}` })] }),
-      Box({ flexShrink: 1, minWidth: 0, children: [Text({ color: 'inactive', wrap: 'truncate-end', children: progress.active })] }),
-    ],
-  })
-}
 
 /** The notes block a look puts above its receipt: `¹ Read src/a.ts · 0.2s`. */
 export function notesBlock(ctx: Ctx, notes: FootnoteData[], style: { indent?: number; accent?: string; italic?: boolean } = {}): RenderElement | null {
@@ -158,4 +132,62 @@ export function waitingBand(ctx: Ctx, waiting: WaitingData): RenderElement {
       Text({ color: 'inactive', children: `· ${formatDuration(waiting.waitedMs)}` }),
     ],
   })
+}
+
+/** What the working bar shows: the turn's time so far, and Claude's task list when it keeps one. */
+export type WorkData = { thinkingMs: number; toolsMs: number; waitingMs: number; progress: Progress | null }
+
+/** The bar's words: `2 of 4 · Fixing total`, or `0:42 · thinking 0:30 · tools 0:12`. */
+export function workingBarText(work: WorkData): string {
+  if (work.progress) return [`${work.progress.done} of ${work.progress.total}`, work.progress.active].filter(Boolean).join(' · ')
+  // The clock is already at the end of the live line above; the bar says where the time went.
+  const parts = [`thinking ${legendTime(work.thinkingMs)}`, `tools ${legendTime(work.toolsMs)}`]
+  if (work.waitingMs > 0) parts.push(`waiting on you ${legendTime(work.waitingMs)}`)
+  return parts.join(' · ')
+}
+
+const hexToInt = (hex: string): number => (/^#[0-9a-f]{6}$/i.test(hex) ? parseInt(hex.slice(1), 16) : 0x8a8a8a)
+const TEXT = 0x01000000
+const BAR_FAINT = { dark: 0x4a4d5a, light: 0xc9ccd6 }
+const BAR_DIM = 0x8a8a8a
+
+/**
+ * The working bar as one row of cells, `width` wide, for the host to blit ten
+ * times a second. With a task list: a block per task (done, the one in hand
+ * pulsing, then those to come). Without: the turn so far split into thinking,
+ * tools and waiting, with a highlight sweeping across. Then the words.
+ */
+export function workingBarCells(work: WorkData, colors: StripColors, isDark: boolean, width: number, frame: number): Cell[] {
+  const faint = isDark ? BAR_FAINT.dark : BAR_FAINT.light
+  const barWidth = Math.max(8, Math.min(32, width - 34))
+  const bar: Cell[] = []
+  if (work.progress && work.progress.total > 0) {
+    const total = work.progress.total
+    const per = Math.max(1, Math.min(6, Math.floor((barWidth - (total - 1)) / total)))
+    const pulse = frame % 10 < 6
+    for (let i = 0; i < total && bar.length < barWidth; i++) {
+      if (i > 0) bar.push({ char: ' ', fg: faint })
+      const isDone = i < work.progress.done
+      const isActive = i === work.progress.done
+      const fg = isDone ? hexToInt(colors.thinking) : isActive ? (pulse ? hexToInt(colors.tools) : faint) : faint
+      for (let c = 0; c < per; c++) bar.push({ char: isDone || isActive ? '■' : '□', fg })
+    }
+  } else {
+    const seg = timeStripSegments(work, barWidth)
+    const fills = [
+      ...Array<number>(seg.thinking).fill(hexToInt(colors.thinking)),
+      ...Array<number>(seg.tools).fill(hexToInt(colors.tools)),
+      ...Array<number>(seg.waiting).fill(hexToInt(colors.waiting)),
+    ]
+    const sweep = frame % (barWidth + 8)
+    fills.forEach((fg, i) => bar.push({ char: '■', fg: Math.abs(i - sweep) <= 1 ? TEXT : fg }))
+  }
+  const words = `  ${workingBarText(work)}`
+  const cells: Cell[] = [...bar]
+  for (const ch of words) {
+    if (cells.length >= width) break
+    cells.push({ char: ch, fg: ch === '·' ? faint : BAR_DIM })
+  }
+  while (cells.length < width) cells.push({ char: ' ', fg: BAR_DIM })
+  return cells.slice(0, width)
 }
