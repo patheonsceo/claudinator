@@ -357,6 +357,7 @@ export function headlineOf(answer: string | undefined, prompt: string): string {
       // Emoji and check marks (✅ 🎉 ✔) read as noise in a title.
       .replace(/[\p{Extended_Pictographic}\u2705\u2714\u2716\uFE0F]/gu, '')
       .replace(/\s+/g, ' ')
+      .replace(/ ([,.;:!?])/g, '$1')
       .trim()
     while (rest !== '') {
       const match = rest.match(/^(.+?)[.!?:](?:\s|$)/)
@@ -445,7 +446,8 @@ export function durationOf(m: SessionModel, id: string): number | undefined {
 }
 
 const rec = (v: unknown): Record<string, unknown> => (typeof v === 'object' && v !== null ? (v as Record<string, unknown>) : {})
-const text = (v: unknown): string => (typeof v === 'string' ? v : '')
+// Ids may come as numbers (`taskId: 2`); everything else that is not text reads as empty.
+const text = (v: unknown): string => (typeof v === 'string' ? v : typeof v === 'number' && Number.isFinite(v) ? String(v) : '')
 
 /**
  * A main-loop call to one of Claude Code's task tools finished with `result`:
